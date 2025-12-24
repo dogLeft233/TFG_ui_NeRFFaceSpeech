@@ -1,0 +1,97 @@
+# scores_LSE 目录的 Git 忽略配置
+
+# ==================== 模型文件 ====================
+# SyncNet 模型文件（大文件，应通过 download_model.sh 下载）
+data/syncnet_v2.model
+data/example.avi
+data/*.model
+data/*.avi
+
+# 人脸检测器权重文件
+detectors/s3fd/weights/*.pth
+detectors/**/weights/*.pth
+
+# ==================== 运行时数据目录 ====================
+# 工作目录（包含临时文件、处理结果等）
+data/work/
+data/work/**
+!data/work/.gitkeep
+
+# 临时目录
+pytmp/
+pyavi/
+pywork/
+pycrop/
+pyframes/
+tmp_dir/
+tmp/
+
+# ==================== 输出文件 ====================
+# 处理结果文件
+*.pckl
+*.pkl
+*.avi
+*.mp4
+*.wav
+*.jpg
+*.png
+*.pt
+*.pth
+
+# 结果文本文件
+all_scores.txt
+scores.txt
+results.txt
+
+# ==================== Python 缓存 ====================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# ==================== 日志文件 ====================
+*.log
+*.log.*
+
+# ==================== 临时文件 ====================
+*.tmp
+*.temp
+.tmp/
+.temp/
+*.swp
+*.swo
+*~
+
+# ==================== 备份文件 ====================
+*.bak
+*.backup
+*.old
+
+# ==================== 系统文件 ====================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# ==================== IDE 和编辑器 ====================
+.vscode/
+.idea/
+*.sublime-*
+
+# ==================== 其他 ====================
+# 环境变量文件
+.env
+.env.local
+
+# 测试输出
+test_output/
+test_data/
+

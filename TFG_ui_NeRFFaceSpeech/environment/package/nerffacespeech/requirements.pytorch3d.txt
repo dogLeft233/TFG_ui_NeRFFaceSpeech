@@ -1,0 +1,6 @@
+# PyTorch3D 和 nvdiffrast（需要单独安装，有强依赖关系）
+# 安装命令：
+# pip install -r requirements.pytorch3d.txt
+
+nvdiffrast @ git+https://github.com/NVlabs/nvdiffrast.git@c5caf7bdb8a2448acc491a9faa47753972edd380
+

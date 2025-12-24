@@ -1,0 +1,129 @@
+
+ls
+export DEBIAN_FRONTEND=noninteractive
+export PYTHONUNBUFFERED=1
+export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+export TORCH_HOME=/app/weights
+export HF_ENDPOINT=https://hf-mirror.com
+export HF_HOME=/app/Hugging_Face
+export CONDA_DIR=/opt/conda
+export PATH=/opt/conda/bin:$PATH
+docker/setup_apt.sh
+apt update
+apt-get update && apt-get install -y --no-install-recommends     wget     curl     git     build-essential     cmake     ffmpeg     libsm6     libxext6     libxrender-dev     libglib2.0-0     libgl1-mesa-glx     ca-certificates
+rm -rf /var/lib/apt/lists/*
+apt-get clean
+git --version
+cmake --version
+ffmpeg -version
+gcc --version
+wget --quiet   https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-latest-Linux-x86_64.sh   -O /tmp/miniconda.sh
+ls -lh /tmp/miniconda.sh
+bash /tmp/miniconda.sh -b -p /opt/conda
+rm /tmp/miniconda.sh
+/opt/conda/bin/conda clean --all -y
+ln -s /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh
+/opt/conda/bin/conda --version
+export PATH=/opt/conda/bin:$PATH
+conda --version
+/opt/conda/bin/conda config --remove-key channels || true
+/opt/conda/bin/conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/
+/opt/conda/bin/conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/
+/opt/conda/bin/conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/pytorch/
+/opt/conda/bin/conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge/
+/opt/conda/bin/conda config --set show_channel_urls yes
+/opt/conda/bin/conda config --set channel_priority strict
+/opt/conda/bin/conda tos accept   --override-channels   --channel https://repo.anaconda.com/pkgs/main   2>/dev/null || true
+/opt/conda/bin/conda tos accept   --override-channels   --channel https://repo.anaconda.com/pkgs/r   2>/dev/null || true
+conda env create -f environment/nerffacespeech.yaml   -p /workspace/environment/nerffacespeech
+git config --global url."https://gitclone.com/github.com/".insteadOf "https://github.com/"
+git config --global --get-regexp url
+git ls-remote https://github.com/pytorch/pytorch.git
+git config --global --remove-section url
+git config --global --get-regexp url
+git config --global --unset-all url."https://gitclone.com/github.com/".insteadOf
+git config --global --get-regexp url
+git ls-remote https://github.com/pytorch/pytorch.git
+git pull --rebase origin front
+conda env create -f /workspace/environment/package/nerffacespeech/environment.min.yaml -p /workspace/environment/nerffacespeech
+conda activate environment/nerffacespeech
+conda init
+conda activate environment/nerffacespeech
+source ~/.bashrc
+conda activate environment/nerffacespeech
+RUN pip install -r environment/package/nerffacespeech/requirements.torch.txt   --index-url https://download.pytorch.org/whl/cu118
+pip install -r environment/package/nerffacespeech/requirements.torch.txt   --index-url https://download.pytorch.org/whl/cu118
+RUN pip install -r environment/package/nerffacespeech/requirements.pytorch3d.txt
+pip install -r environment/package/nerffacespeech/requirements.pytorch3d.txt
+pip install pytorch3d==0.7.8   -f https://dl.fbaipublicfiles.com/pytorch3d/packaging/wheels/py39_cu118_pyt212/download.html
+python --version
+pip --version
+python -c "import torch; print(torch.__version__)"
+pip install numpy==1.26.5
+pip install "numpy<2,>=1.25.2"
+pip install pytorch3d==0.7.8 -f https://dl.fbaipublicfiles.com/pytorch3d/packaging/wheels/py39_cu118_pyt212/download.html
+pip install pytorch3d
+conda install https://anaconda.org/pytorch3d/pytorch3d/0.7.8/download/linux-64/pytorch3d-0.7.8-py39_cu118_pyt212.tar.bz2
+pip install -r environment/package/nerffacespeech/requirements.txt
+conda env create -f environment/package/api/environment.min.yaml -p environment/api
+conda activate environment/api
+pip install -r environment/package/api/requirements.torch.txt
+pip install -r environment/package/api/requirements.txt
+mkdir environment/syncnet
+conda env create -f environment/package/syncnet/environment.min.yaml -p /workspace/environment/nerffacespeech
+conda env create -f environment/package/syncnet/environment.min.yaml -p environment/syncnet
+conda activate environment/syncnet
+pip install -r environment/package/syncnet/requirements.torch.txt
+pip install -r environment/package/syncnet/requirements.txt
+conda env create -f environment/package/llm_talk/environment.min.yaml -p /workspace/environment/llm_talk
+conda activate environment/llm_talk
+pip install -r environment/package/llm_talk/requirements.torch.txt
+pip install -r environment/package/llm_talk/requirements.txt
+pip install pkuseg==0.0.25 --no-build-isolation
+conda activate environment/llm_talk
+python download_models.py
+apt install -y ca-certificates
+update-ca-certificates
+python - << 'EOF'
+import ssl
+print(ssl.get_default_verify_paths())
+EOF
+
+ls /etc/ssl/certs/ca-certificates.crt
+export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+export SSL_CERT_DIR=/etc/ssl/certs
+python - << 'EOF'
+import ssl, urllib.request
+print(ssl.get_default_verify_paths())
+urllib.request.urlopen("https://download.pytorch.org/models/resnet18-f37072fd.pth")
+print("HTTPS OK")
+EOF
+
+
+conda activate environment/syncnet
+python download_models.py --group fan
+pip list
+pip install face-alignment
+python download_models.py --group fan
+./run_eval_pipeline.sh
+conda activate environment/api
+./run_eval_pipeline.sh
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin && sudo mv cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600 && sudo apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub && sudo add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ /"
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin
+mv cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600
+apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub
+add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ /"
+apt install -y cuda-toolkit-11-8
+apt update
+apt install -y cuda-toolkit-11-8
+cat << 'EOF' >> /etc/profile.d/cuda-11.8.sh
+export CUDA_HOME=/usr/local/cuda-11.8
+export PATH=$CUDA_HOME/bin:$PATH
+export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
+EOF
+
+source /etc/profile
+conda init
+conda activate environment/api
+nvcc -V
+./run_eval_pipeline.sh

@@ -1,0 +1,33 @@
+INFO:     Started server process [24366]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[数据库] 数据库目录: /root/autodl-tmp/TFG_TALK_NeRFaceSpeech/database
+[数据库] 数据库文件: /root/autodl-tmp/TFG_TALK_NeRFaceSpeech/database/settings.db
+[数据库] 设置数据库文件已存在，跳过初始化: /root/autodl-tmp/TFG_TALK_NeRFaceSpeech/database/settings.db
+INFO:     127.0.0.1:41760 - "HEAD /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41766 - "GET /api/settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43822 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43822 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41776 - "HEAD /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41776 - "HEAD /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38260 - "HEAD /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38260 - "HEAD /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38260 - "HEAD /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38270 - "HEAD /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38270 - "HEAD /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38270 - "HEAD /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38270 - "HEAD /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36778 - "HEAD /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36778 - "HEAD /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36778 - "HEAD /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36782 - "HEAD /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51764 - "HEAD /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51770 - "HEAD /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41086 - "HEAD /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41092 - "HEAD /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40364 - "HEAD /docs HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [24366]

@@ -1,0 +1,1855 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>语音对话 - NeRFFaceSpeech</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="settings.js"></script>
+    <script src="api.js"></script>
+    <style>
+        :root {
+        --primary: #1e40af;
+        --primary-2: #3b82f6;
+        --bg: #0b1020;
+        --card: rgba(255, 255, 255, 0.06);
+        --border: rgba(255, 255, 255, 0.14);
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+        --g1: rgba(59, 130, 246, 0.16);
+        --g2: rgba(14, 165, 233, 0.14);
+        --g3: rgba(56, 189, 248, 0.12);
+        --card-bg: rgb(24, 66, 134);
+        --base-font-size: 14px;
+        }
+
+        body.theme-tech {
+        --primary: #1e40af;
+        --primary-2: #3b82f6;
+        --bg: #0b1020;
+        --card: rgba(255, 255, 255, 0.06);
+        --border: rgba(255, 255, 255, 0.14);
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+        --g1: rgba(59, 130, 246, 0.16);
+        --g2: rgba(14, 165, 233, 0.14);
+        --g3: rgba(56, 189, 248, 0.12);
+        --card-bg: rgb(24, 66, 134);
+        }
+
+        body.theme-warm {
+            --primary: #f97316;
+            --primary-2: #ea580c;
+            --bg: #fff8f0;
+            --card: rgba(255, 255, 255, 0.9);
+            --border: rgba(249, 115, 22, 0.2);
+            --text: #1f2937;
+            --muted: #6b7280;
+            --g1: rgba(251, 191, 36, 0.15);
+            --g2: rgba(249, 115, 22, 0.12);
+            --g3: rgba(234, 88, 12, 0.1);
+            --card-bg: rgba(251, 191, 36, 0.15);
+        }
+
+        body.theme-minimal {
+            --primary: #6b7280;
+            --primary-2: #4b5563;
+            --bg: #f5f5f5;
+            --card: #ffffff;
+            --border: #e5e7eb;
+            --text: #111827;
+            --muted: #6b7280;
+            --g1: rgba(107, 114, 128, 0.08);
+            --g2: rgba(75, 85, 99, 0.07);
+            --g3: rgba(156, 163, 175, 0.06);
+            --card-bg: rgba(107, 114, 128, 0.1);
+        }
+
+        html {
+            font-size: var(--base-font-size);
+        }
+
+        body {
+            margin: 0;
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at 20% 20%, var(--g1), transparent 25%),
+                radial-gradient(circle at 80% 30%, var(--g2), transparent 25%),
+                radial-gradient(circle at 50% 80%, var(--g3), transparent 22%),
+                var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        .page {
+            max-width: 1400px;
+            width: 94vw;
+            margin: 0 auto;
+            padding: 20px 24px 40px;
+            min-height: 96vh;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 0.4px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border);
+            color: var(--text);
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--primary-2);
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 520px 1fr;
+            gap: 18px;
+            align-items: start;
+        }
+
+        @media (max-width: 1200px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        label {
+            font-weight: 700;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 15px;
+            background: var(--card-bg);
+            color: var(--text);
+            outline: none;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: rgba(96, 165, 250, 0.8);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        button.primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-2));
+            border: 1px solid var(--primary-2);
+            color: #fff;
+            font-weight: 700;
+            border-radius: 12px;
+            padding: 12px 14px;
+            cursor: pointer;
+            width: 100%;
+            transition: opacity 0.2s ease;
+        }
+
+        button.primary:hover:not(:disabled) {
+            opacity: 0.9;
+        }
+
+        button.secondary {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-weight: 600;
+            border-radius: 12px;
+            padding: 12px 14px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .status-box {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 12px;
+            border-radius: 12px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            min-height: 60px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-size: 13px;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .video-container video {
+            width: 100%;
+            display: block;
+        }
+
+        .video-placeholder {
+            width: 100%;
+            aspect-ratio: 16/9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--muted);
+            font-size: 16px;
+            border-radius: 12px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .progress-container {
+            margin-top: 12px;
+            margin-bottom: 12px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--primary-2));
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .progress-text {
+            font-size: 13px;
+            color: var(--muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .video-controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .video-controls button {
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 12px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-group button {
+            flex: 1;
+        }
+
+        /* 音频输入区域样式 */
+        .audio-input-section {
+            margin-top: 18px;
+            padding-top: 18px;
+            border-top: 1px solid var(--border);
+        }
+
+        .input-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .tab-btn.active {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: var(--primary-2);
+            color: var(--primary-2);
+        }
+
+        .tab-btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* 麦克风录音按钮 */
+        .record-btn {
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            border: 2px solid var(--border);
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text);
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .record-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--primary-2);
+        }
+
+        .record-btn.recording {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: #ef4444;
+            color: #ef4444;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        /* 文件上传区域 */
+        .file-upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .file-upload-area:hover {
+            border-color: var(--primary-2);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .file-upload-area.dragover {
+            border-color: var(--primary-2);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-info {
+            margin-top: 12px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .audio-preview {
+            margin-top: 12px;
+            width: 100%;
+        }
+
+        .audio-preview audio {
+            width: 100%;
+        }
+
+        /* 识别文本显示 */
+        .recognized-text {
+            margin-top: 12px;
+            padding: 12px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text);
+            min-height: 40px;
+        }
+
+        .recognized-text.empty {
+            color: var(--muted);
+            font-style: italic;
+        }
+
+        /* 设置按钮 */
+        .settings-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .settings-btn:hover {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        /* 侧边栏遮罩 */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 2000;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: var(--bg);
+            border-left: 1px solid var(--border);
+            z-index: 2001;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar.active {
+            right: 0;
+        }
+
+        .sidebar-content {
+            padding: 24px;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 20px;
+            color: var(--text);
+        }
+
+        .sidebar-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 0;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-close:hover {
+            background: var(--card-bg);
+            color: var(--text);
+        }
+
+        /* 分页标签 */
+        .sidebar-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--muted);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .sidebar-tab:hover {
+            color: var(--text);
+        }
+
+        /* 分页内容 */
+        .sidebar .tab-content {
+            display: none;
+        }
+
+        .sidebar .tab-content.active {
+            display: block;
+        }
+
+        /* 选项网格 */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .option-card {
+            padding: 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: var(--card-bg);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .option-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .option-card.selected {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .option-card.selected .option-name {
+            color: #fff;
+        }
+
+        .option-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .option-desc {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .option-card.selected .option-desc {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* 字号选择 */
+        .font-size-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .font-size-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: var(--card-bg);
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .font-size-btn:hover {
+            border-color: var(--primary);
+        }
+
+        .font-size-btn.selected {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .font-size-custom {
+            margin-top: 16px;
+        }
+
+        .font-size-custom input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--card-bg);
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                right: -100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <button class="settings-btn" id="settingsBtn">⚙️ 设置</button>
+
+    <!-- 侧边栏遮罩 -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- 设置侧边栏 -->
+    <div class="sidebar" id="settingsSidebar">
+        <div class="sidebar-content">
+            <div class="sidebar-header">
+                <h2>设置</h2>
+                <button class="sidebar-close" id="sidebarClose">×</button>
+            </div>
+
+            <div class="sidebar-tabs">
+                <button class="sidebar-tab active" data-tab="theme">主题</button>
+                <button class="sidebar-tab" data-tab="font">字体</button>
+            </div>
+
+            <!-- 主题设置 -->
+            <div class="tab-content active" id="themeTab">
+                <div class="options-grid">
+                    <div class="option-card" data-theme="tech">
+                        <div class="option-name">科技风</div>
+                        <div class="option-desc">深蓝色科技感</div>
+                    </div>
+                    <div class="option-card" data-theme="warm">
+                        <div class="option-name">温馨风</div>
+                        <div class="option-desc">暖色调温馨</div>
+                    </div>
+                    <div class="option-card" data-theme="minimal">
+                        <div class="option-name">简约风</div>
+                        <div class="option-desc">灰色简约</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 字体设置 -->
+            <div class="tab-content" id="fontTab">
+                <div style="margin-bottom: 16px;">
+                    <label
+                        style="display: block; margin-bottom: 8px; color: var(--text); font-weight: 500;">字体样式</label>
+                    <div class="options-grid">
+                        <div class="option-card" data-font="SimSun">
+                            <div class="option-name">宋体</div>
+                            <div class="option-desc">SimSun</div>
+                        </div>
+                        <div class="option-card" data-font="SimHei">
+                            <div class="option-name">黑体</div>
+                            <div class="option-desc">SimHei</div>
+                        </div>
+                        <div class="option-card" data-font="Microsoft YaHei">
+                            <div class="option-name">微软雅黑</div>
+                            <div class="option-desc">Microsoft YaHei</div>
+                        </div>
+                        <div class="option-card" data-font="Arial">
+                            <div class="option-name">Arial</div>
+                            <div class="option-desc">Arial</div>
+                        </div>
+                        <div class="option-card" data-font="Times New Roman">
+                            <div class="option-name">Times New Roman</div>
+                            <div class="option-desc">Times New Roman</div>
+                        </div>
+                        <div class="option-card" data-font="Inter">
+                            <div class="option-name">Inter</div>
+                            <div class="option-desc">Inter（默认）</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label
+                        style="display: block; margin-bottom: 8px; color: var(--text); font-weight: 500;">字号大小</label>
+                    <div class="font-size-group">
+                        <button class="font-size-btn" data-size="small">小</button>
+                        <button class="font-size-btn" data-size="medium">中</button>
+                        <button class="font-size-btn" data-size="large">大</button>
+                        <button class="font-size-btn" data-size="custom">自定义</button>
+                    </div>
+                    <div class="font-size-custom" id="customSizeInput" style="display: none;">
+                        <input type="number" id="customSizeValue" placeholder="输入字号（px）" min="10" max="24" value="14">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="page">
+        <header>
+            <a href="index.html" class="back-btn">← 返回首页</a>
+            <h1>🎤 语音对话</h1>
+            <div></div>
+        </header>
+
+        <div class="grid">
+            <!-- 左侧：输入区域 -->
+            <div>
+                <div class="card">
+                    <!-- 输入方式切换 -->
+                    <div class="input-tabs">
+                        <button class="tab-btn active" onclick="switchTab('microphone')">🎤 麦克风</button>
+                        <button class="tab-btn" onclick="switchTab('upload')">📁 上传音频</button>
+                    </div>
+
+                    <!-- 麦克风输入 -->
+                    <div id="microphoneTab" class="tab-content active">
+                        <button class="record-btn" id="recordBtn" onclick="toggleRecording()">
+                            <span id="recordIcon">🎤</span>
+                            <span id="recordText">点击开始录音</span>
+                        </button>
+                        <div class="muted" style="margin-top: 8px; text-align: center;">
+                            点击按钮开始录音，再次点击停止
+                        </div>
+                        <div id="recordingTime"
+                            style="display: none; text-align: center; margin-top: 8px; color: #ef4444; font-weight: 600;">
+                            录音中: 00:00
+                        </div>
+                    </div>
+
+                    <!-- 文件上传输入 -->
+                    <div id="uploadTab" class="tab-content">
+                        <div class="file-upload-area" id="fileUploadArea"
+                            onclick="document.getElementById('audioFileInput').click()">
+                            <div style="font-size: 48px; margin-bottom: 8px;">📁</div>
+                            <div style="font-weight: 600; margin-bottom: 4px;">点击或拖拽音频文件到这里</div>
+                            <div class="muted" style="font-size: 12px;">支持 WAV, MP3, M4A 等格式</div>
+                        </div>
+                        <input type="file" id="audioFileInput" class="file-input" accept="audio/*"
+                            onchange="handleFileSelect(event)">
+                        <div id="fileInfo" class="file-info" style="display: none;"></div>
+                        <div id="audioPreview" class="audio-preview" style="display: none;"></div>
+                    </div>
+
+                    <!-- 识别文本显示 -->
+                    <div style="margin-top: 18px;">
+                        <label>识别文本</label>
+                        <div class="recognized-text empty" id="recognizedText">等待输入...</div>
+                    </div>
+
+                    <!-- 角色和模型选择 -->
+                    <label for="characterInput" style="margin-top: 18px;">角色</label>
+                    <div class="btn-group" style="margin-bottom: 8px;">
+                        <select id="characterInput">
+                            <option value="">加载中...</option>
+                        </select>
+                        <button class="secondary" id="refreshCharacterBtn" onclick="loadCharacters()">🔄</button>
+                    </div>
+
+                    <label for="modelSelect" style="margin-top: 18px;">模型</label>
+                    <div class="btn-group" style="margin-bottom: 8px;">
+                        <select id="modelSelect">
+                            <option value="">加载中...</option>
+                        </select>
+                        <button class="secondary" id="refreshBtn" onclick="loadModels()">🔄</button>
+                    </div>
+
+                    <button class="primary" id="generateBtn" onclick="startGeneration()">🚀 开始生成视频</button>
+                    <button class="secondary" id="cancelBtn" onclick="cancelGeneration()"
+                        style="display: none; margin-top: 8px;">❌ 终止任务</button>
+
+                    <div class="progress-container" id="progressContainer" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span id="progressText">准备中...</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                    </div>
+
+                    <div class="status-box" id="statusBox" style="margin-top: 12px;">等待开始...</div>
+                </div>
+            </div>
+
+            <!-- 右侧：视频显示区域 -->
+            <div>
+                <div class="card">
+                    <div class="video-placeholder" id="videoPlaceholder">
+                        等待生成视频...
+                    </div>
+
+                    <div class="video-container hidden" id="videoContainer">
+                        <video id="videoOutput" controls></video>
+                    </div>
+
+                    <div class="video-controls" id="videoControls" style="display: none; margin-top: 12px;">
+                        <button class="secondary" onclick="downloadVideo()">📥 下载视频</button>
+                        <button class="secondary" onclick="fullscreenVideo()">🔍 全屏</button>
+                    </div>
+
+                    <div id="videoInfo" style="display: none; margin-top: 12px; font-size: 13px; color: var(--muted);">
+                        <div>生成时间: <span id="generationTime">-</span></div>
+                        <div>任务ID: <span id="taskId">-</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTaskId = null;
+        let statusPollInterval = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+        let recordingTimer = null;
+        let recordingStartTime = null;
+        let currentAudioBase64 = null;
+        let currentAudioFile = null;
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 应用设置（从数据库读取）
+            try {
+                const settings = await fetchSettings();
+                await Promise.all([
+                    applySettingsOnly(settings),
+                    updateThemeSelection(settings),
+                    updateFontSelection(settings),
+                    updateFontSizeSelection(settings)
+                ]);
+            } catch (error) {
+                console.error('应用设置失败:', error);
+            }
+
+            // 设置侧边栏控制
+            const settingsBtn = document.getElementById('settingsBtn');
+            const settingsSidebar = document.getElementById('settingsSidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const sidebarClose = document.getElementById('sidebarClose');
+
+            if (settingsBtn && settingsSidebar) {
+                const openSidebar = () => {
+                    settingsSidebar.classList.add('active');
+                    sidebarOverlay.classList.add('active');
+                };
+
+                const closeSidebar = () => {
+                    settingsSidebar.classList.remove('active');
+                    sidebarOverlay.classList.remove('active');
+                };
+
+                settingsBtn.addEventListener('click', openSidebar);
+                if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
+                if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+
+                // 标签切换
+                document.querySelectorAll('.sidebar-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        const targetTab = tab.dataset.tab;
+                        document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+                        document.querySelectorAll('.sidebar .tab-content').forEach(c => c.classList.remove('active'));
+                        tab.classList.add('active');
+                        const targetContent = document.getElementById(targetTab + 'Tab');
+                        if (targetContent) targetContent.classList.add('active');
+                    });
+                });
+
+                // 主题选择
+                document.querySelectorAll('[data-theme]').forEach(card => {
+                    card.addEventListener('click', () => {
+                        applyTheme(card.dataset.theme);
+                    });
+                });
+
+                // 字体选择
+                document.querySelectorAll('[data-font]').forEach(card => {
+                    card.addEventListener('click', () => {
+                        applyFont(card.dataset.font);
+                    });
+                });
+
+                // 字号选择
+                document.querySelectorAll('[data-size]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        if (btn.dataset.size === 'custom') {
+                            const customInput = document.getElementById('customSizeInput');
+                            if (customInput) customInput.style.display = 'block';
+                        } else {
+                            const customInput = document.getElementById('customSizeInput');
+                            if (customInput) customInput.style.display = 'none';
+                            applyFontSize(btn.dataset.size);
+                        }
+                    });
+                });
+
+                // 自定义字号输入
+                const customSizeInput = document.getElementById('customSizeValue');
+                if (customSizeInput) {
+                    customSizeInput.addEventListener('change', () => {
+                        applyFontSize('custom');
+                    });
+                }
+            }
+
+            // 原有的初始化代码
+            // 先加载角色和模型列表，然后再检查运行中的任务
+            await Promise.all([loadCharacters(), loadModels()]);
+            checkRunningTask();
+            setupFileUpload();
+        });
+
+        // 加载角色列表（带超时处理）
+        async function loadCharacters() {
+            const select = document.getElementById('characterInput');
+            const refreshBtn = document.getElementById('refreshCharacterBtn');
+            const isUserRefresh = refreshBtn && refreshBtn.disabled === false; // 判断是否是用户主动刷新
+
+            try {
+                if (refreshBtn) refreshBtn.disabled = true;
+                select.innerHTML = '<option value="">加载中...</option>';
+
+                // api.js 中已经设置了 5 秒超时，这里直接调用即可
+                const characters = await getCharacters();
+
+                if (characters.length === 0) {
+                    select.innerHTML = '<option value="">未找到角色</option>';
+                    if (isUserRefresh) {
+                        showToast('未找到已训练的角色', 'warning');
+                    }
+                    return;
+                }
+
+                select.innerHTML = characters.map(c => `<option value="${c}">${c}</option>`).join('');
+                if (characters.length > 0) {
+                    select.value = characters[0];
+                }
+            } catch (error) {
+                console.error('加载角色失败:', error);
+                const errorMsg = error.message || '未知错误';
+
+                // 根据错误类型显示不同的提示
+                if (errorMsg.includes('超时') || errorMsg.includes('timeout') || errorMsg.includes('Failed to fetch')) {
+                    select.innerHTML = '<option value="">后端未连接</option>';
+                    if (isUserRefresh) {
+                        showToast('后端服务未启动或无法连接', 'error');
+                    } else {
+                        console.warn('后端服务可能未启动，页面已就绪，可以稍后重试');
+                    }
+                } else {
+                    select.innerHTML = '<option value="">加载失败</option>';
+                    if (isUserRefresh) {
+                        showToast('加载角色失败: ' + errorMsg, 'error');
+                    }
+                }
+            } finally {
+                if (refreshBtn) refreshBtn.disabled = false;
+            }
+        }
+
+        // 切换输入方式
+        function switchTab(tab) {
+            // 更新按钮状态
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            if (tab === 'microphone') {
+                document.querySelector('.tab-btn:first-child').classList.add('active');
+                document.getElementById('microphoneTab').classList.add('active');
+            } else {
+                document.querySelector('.tab-btn:last-child').classList.add('active');
+                document.getElementById('uploadTab').classList.add('active');
+            }
+
+            // 清除之前的输入
+            clearAudioInput();
+        }
+
+        // 设置文件上传
+        function setupFileUpload() {
+            const uploadArea = document.getElementById('fileUploadArea');
+            const fileInput = document.getElementById('audioFileInput');
+
+            // 拖拽上传
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const file = files[0];
+                    // 检查文件类型：MIME类型或文件扩展名
+                    const isAudioFile = file.type.startsWith('audio/') ||
+                        /\.(wav|mp3|m4a|ogg|flac|aac|wma|opus)$/i.test(file.name);
+                    if (isAudioFile) {
+                        handleAudioFile(file);
+                    } else {
+                        showToast('请上传音频文件（支持 WAV, MP3, M4A 等格式）', 'error');
+                    }
+                }
+            });
+        }
+
+        // 处理文件选择
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleAudioFile(file);
+            }
+        }
+
+        // 处理音频文件
+        async function handleAudioFile(file) {
+            console.log('处理音频文件:', file.name, file.type, file.size);
+            currentAudioFile = file;
+            currentAudioBase64 = null;
+
+            // 显示文件信息
+            const fileInfo = document.getElementById('fileInfo');
+            fileInfo.style.display = 'block';
+            fileInfo.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>📁 ${file.name}</span>
+                    <span style="color: var(--muted);">${(file.size / 1024).toFixed(2)} KB</span>
+                </div>
+            `;
+
+            // 显示音频预览
+            const audioPreview = document.getElementById('audioPreview');
+            audioPreview.style.display = 'block';
+            const audioUrl = URL.createObjectURL(file);
+            audioPreview.innerHTML = `<audio controls src="${audioUrl}"></audio>`;
+
+            // 转换为Base64
+            try {
+                updateStatus('📁 正在读取音频文件...');
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const arrayBuffer = e.target.result;
+                        console.log('文件读取完成，大小:', arrayBuffer.byteLength);
+
+                        // 使用更安全的方式转换为Base64
+                        const bytes = new Uint8Array(arrayBuffer);
+                        let binary = '';
+                        const len = bytes.byteLength;
+                        for (let i = 0; i < len; i++) {
+                            binary += String.fromCharCode(bytes[i]);
+                        }
+                        const base64 = btoa(binary);
+
+                        currentAudioBase64 = base64;
+                        console.log('Base64转换完成，长度:', base64.length);
+
+                        updateStatus('✅ 音频文件已加载，点击"生成视频"按钮将自动进行语音识别');
+
+                        // 更新识别文本显示
+                        const recognizedTextEl = document.getElementById('recognizedText');
+                        recognizedTextEl.textContent = '音频已加载，等待生成...';
+                        recognizedTextEl.classList.remove('empty');
+
+                        showToast('音频文件已加载', 'success');
+                    } catch (error) {
+                        console.error('Base64转换失败:', error);
+                        showToast('音频文件处理失败: ' + error.message, 'error');
+                        currentAudioBase64 = null;
+                    }
+                };
+                reader.onerror = (error) => {
+                    console.error('文件读取错误:', error);
+                    showToast('读取音频文件失败', 'error');
+                    currentAudioBase64 = null;
+                };
+                reader.readAsArrayBuffer(file);
+            } catch (error) {
+                console.error('读取文件失败:', error);
+                showToast('读取音频文件失败: ' + error.message, 'error');
+                currentAudioBase64 = null;
+            }
+        }
+
+        // 切换录音状态
+        async function toggleRecording() {
+            if (!isRecording) {
+                await startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+
+        // 开始录音
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+
+                    // 转换为Base64
+                    const reader = new FileReader();
+                    reader.onload = async () => {
+                        const arrayBuffer = reader.result;
+                        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+                        currentAudioBase64 = base64;
+                        currentAudioFile = null;
+
+                        // 显示音频预览
+                        const audioPreview = document.getElementById('audioPreview');
+                        audioPreview.style.display = 'block';
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        audioPreview.innerHTML = `<audio controls src="${audioUrl}"></audio>`;
+
+                        // 更新识别文本显示
+                        const recognizedTextEl = document.getElementById('recognizedText');
+                        recognizedTextEl.textContent = '录音完成，点击"生成视频"按钮将自动进行语音识别';
+                        recognizedTextEl.classList.remove('empty');
+                    };
+                    reader.readAsArrayBuffer(audioBlob);
+
+                    // 停止所有音频轨道
+                    stream.getTracks().forEach(track => track.stop());
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+
+                // 更新UI
+                const recordBtn = document.getElementById('recordBtn');
+                recordBtn.classList.add('recording');
+                document.getElementById('recordIcon').textContent = '⏹️';
+                document.getElementById('recordText').textContent = '点击停止录音';
+
+                // 显示录音时间
+                const recordingTime = document.getElementById('recordingTime');
+                recordingTime.style.display = 'block';
+                recordingStartTime = Date.now();
+                recordingTimer = setInterval(() => {
+                    const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+                    const minutes = Math.floor(elapsed / 60);
+                    const seconds = elapsed % 60;
+                    recordingTime.textContent = `录音中: ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                }, 1000);
+
+                updateStatus('🎤 正在录音...');
+            } catch (error) {
+                console.error('录音失败:', error);
+                showToast('无法访问麦克风: ' + error.message, 'error');
+            }
+        }
+
+        // 停止录音
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+
+                // 更新UI
+                const recordBtn = document.getElementById('recordBtn');
+                recordBtn.classList.remove('recording');
+                document.getElementById('recordIcon').textContent = '🎤';
+                document.getElementById('recordText').textContent = '点击开始录音';
+
+                // 隐藏录音时间
+                const recordingTime = document.getElementById('recordingTime');
+                recordingTime.style.display = 'none';
+                if (recordingTimer) {
+                    clearInterval(recordingTimer);
+                    recordingTimer = null;
+                }
+
+                updateStatus('⏹️ 录音已停止，正在处理...');
+            }
+        }
+
+        // 语音识别
+        async function performTranscription() {
+            if (!currentAudioBase64) {
+                showToast('没有可识别的音频', 'error');
+                return null;
+            }
+
+            try {
+                updateStatus('🔍 正在进行语音识别...');
+                const recognizedTextEl = document.getElementById('recognizedText');
+                recognizedTextEl.textContent = '识别中...';
+                recognizedTextEl.classList.remove('empty');
+
+                // 使用api.js中的函数，支持超时处理
+                const result = await transcribeAudio({
+                    audio_base64: currentAudioBase64,
+                    model_name: 'base',
+                    language: null,
+                    task: 'transcribe'
+                });
+
+                if (result.success && result.data) {
+                    const text = result.data.text || '';
+                    recognizedTextEl.textContent = text || '未识别到文本';
+                    recognizedTextEl.classList.remove('empty');
+                    updateStatus('✅ 语音识别成功，开始生成视频');
+                    showToast('语音识别成功', 'success');
+                    return text;
+                } else {
+                    throw new Error(result.error?.message || result.error || '识别失败');
+                }
+            } catch (error) {
+                console.error('语音识别失败:', error);
+                const recognizedTextEl = document.getElementById('recognizedText');
+                const errorMsg = error.message || '识别失败';
+                recognizedTextEl.textContent = '识别失败: ' + errorMsg;
+                recognizedTextEl.classList.add('empty');
+                updateStatus('❌ 语音识别失败: ' + errorMsg);
+                showToast('语音识别失败: ' + errorMsg, 'error');
+                return null;
+            }
+        }
+
+        // 清除音频输入
+        function clearAudioInput() {
+            // 停止录音
+            if (isRecording) {
+                stopRecording();
+            }
+
+            // 清除文件
+            currentAudioFile = null;
+            currentAudioBase64 = null;
+            document.getElementById('audioFileInput').value = '';
+            document.getElementById('fileInfo').style.display = 'none';
+            document.getElementById('audioPreview').style.display = 'none';
+            document.getElementById('recognizedText').textContent = '等待输入...';
+            document.getElementById('recognizedText').classList.add('empty');
+        }
+
+        // 加载模型列表
+        async function loadModels() {
+            const select = document.getElementById('modelSelect');
+            const refreshBtn = document.getElementById('refreshBtn');
+
+            try {
+                refreshBtn.disabled = true;
+                select.innerHTML = '<option value="">加载中...</option>';
+
+                const models = await getModels();
+
+                if (models.length === 0) {
+                    select.innerHTML = '<option value="">未找到模型</option>';
+                    showToast('未找到模型', 'error');
+                    return;
+                }
+
+                select.innerHTML = models.map(m => `<option value="${m}">${m}</option>`).join('');
+                if (models.length > 0) {
+                    select.value = models[0];
+                }
+            } catch (error) {
+                console.error('加载模型失败:', error);
+                const errorMsg = error.message || '未知错误';
+                if (errorMsg.includes('超时') || errorMsg.includes('timeout') || errorMsg.includes('Failed to fetch')) {
+                    select.innerHTML = '<option value="">后端未连接</option>';
+                } else {
+                    select.innerHTML = '<option value="">加载失败</option>';
+                    showToast('加载模型失败: ' + errorMsg, 'error');
+                }
+            } finally {
+                refreshBtn.disabled = false;
+            }
+        }
+
+        // 检查是否有正在运行的任务
+        async function checkRunningTask() {
+            try {
+                const apiUrl = getApiBaseUrl();
+                const response = await fetch(`${apiUrl}/generate_video/running`, {
+                    signal: AbortSignal.timeout(3000)
+                });
+
+                if (!response.ok) {
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    const task = data.data;
+                    if (task.status === 'pending' || task.status === 'running') {
+                        currentTaskId = task.unique_id;
+                        document.getElementById('characterInput').value = task.character || 'ayanami';
+                        document.getElementById('modelSelect').value = task.model_name || '';
+                        setInputsDisabled(true);
+                        document.getElementById('generateBtn').style.display = 'none';
+                        document.getElementById('cancelBtn').style.display = 'block';
+                        document.getElementById('progressContainer').style.display = 'block';
+                        startStatusPolling(currentTaskId, task.start_time);
+                        showToast('检测到正在运行的任务，已恢复', 'info');
+                    }
+                }
+            } catch (error) {
+                // 静默失败
+            }
+        }
+
+        // 开始生成视频
+        async function startGeneration() {
+            const character = document.getElementById('characterInput').value;
+            const model = document.getElementById('modelSelect').value;
+
+            if (!model) {
+                showToast('请选择模型', 'error');
+                return;
+            }
+
+            // 禁用输入
+            setInputsDisabled(true);
+            document.getElementById('generateBtn').style.display = 'none';
+            document.getElementById('cancelBtn').style.display = 'block';
+            document.getElementById('progressContainer').style.display = 'block';
+
+            // 重置UI
+            document.getElementById('videoContainer').classList.add('hidden');
+            document.getElementById('videoPlaceholder').classList.remove('hidden');
+            document.getElementById('videoPlaceholder').textContent = '等待生成视频...';
+            document.getElementById('videoControls').style.display = 'none';
+            document.getElementById('videoInfo').style.display = 'none';
+            updateStatus('📋 准备中...');
+            updateProgress(0, '准备中...');
+
+            try {
+                let text = null;
+
+                // 检查是否有音频输入（Base64或文件对象）
+                console.log('开始生成视频，检查音频输入:', {
+                    hasBase64: !!currentAudioBase64,
+                    hasFile: !!currentAudioFile,
+                    base64Length: currentAudioBase64 ? currentAudioBase64.length : 0,
+                    fileName: currentAudioFile ? currentAudioFile.name : 'none'
+                });
+
+                // 如果有音频文件但没有Base64，先转换为Base64
+                if (currentAudioFile && !currentAudioBase64) {
+                    updateStatus('📁 检测到音频文件，正在转换...');
+                    updateProgress(2, '处理音频文件...');
+
+                    // 将文件转换为Base64
+                    await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            try {
+                                const arrayBuffer = e.target.result;
+                                const bytes = new Uint8Array(arrayBuffer);
+                                let binary = '';
+                                for (let i = 0; i < bytes.byteLength; i++) {
+                                    binary += String.fromCharCode(bytes[i]);
+                                }
+                                currentAudioBase64 = btoa(binary);
+                                console.log('文件转换为Base64完成，长度:', currentAudioBase64.length);
+                                resolve();
+                            } catch (error) {
+                                console.error('Base64转换失败:', error);
+                                reject(error);
+                            }
+                        };
+                        reader.onerror = (error) => {
+                            console.error('文件读取错误:', error);
+                            reject(error);
+                        };
+                        reader.readAsArrayBuffer(currentAudioFile);
+                    });
+                }
+
+                // 如果有音频输入，先进行语音识别
+                if (currentAudioBase64) {
+                    updateStatus('🔍 检测到音频输入，开始语音识别...');
+                    updateProgress(5, '语音识别中...');
+
+                    text = await performTranscription();
+
+                    if (!text) {
+                        throw new Error('语音识别失败，无法生成视频');
+                    }
+                } else {
+                    // 如果没有音频输入，尝试从识别文本区域获取文本
+                    const recognizedTextEl = document.getElementById('recognizedText');
+                    text = recognizedTextEl.textContent.trim();
+
+                    if (!text || text === '等待输入...' || text === '音频已加载，等待生成...' || text.includes('识别中') || text.includes('识别失败')) {
+                        showToast('请先上传音频文件或进行录音', 'error');
+                        resetUI();
+                        return;
+                    }
+                }
+
+                // 提交视频生成任务
+                updateStatus('📋 提交任务中...');
+                updateProgress(10, '提交任务...');
+
+                const result = await generateVideo({
+                    text: text,
+                    character: character,
+                    model_name: model
+                });
+
+                if (!result.success) {
+                    throw new Error(result.error || '任务提交失败');
+                }
+
+                currentTaskId = result.unique_id;
+                updateStatus(`📋 任务已提交 (ID: ${currentTaskId.substring(0, 8)}...)`);
+                showToast('任务已提交，正在后台生成中...', 'info');
+
+                // 开始轮询状态
+                startStatusPolling(currentTaskId);
+
+            } catch (error) {
+                console.error('生成失败:', error);
+                updateStatus('❌ 任务提交失败: ' + error.message);
+                showToast('任务提交失败: ' + error.message, 'error');
+                resetUI();
+            }
+        }
+
+        // 开始状态轮询
+        function startStatusPolling(taskId, taskStartTime = null) {
+            if (statusPollInterval) {
+                clearInterval(statusPollInterval);
+            }
+
+            let pollCount = 0;
+            let lastProgress = 0;
+            let consecutiveFailures = 0;
+
+            let startTime;
+            if (taskStartTime) {
+                try {
+                    startTime = new Date(taskStartTime).getTime();
+                } catch (e) {
+                    startTime = Date.now();
+                }
+            } else {
+                startTime = Date.now();
+            }
+
+            const MAX_RUNTIME_SECONDS = 1800;
+
+            statusPollInterval = setInterval(async () => {
+                pollCount++;
+                const elapsedSeconds = (Date.now() - startTime) / 1000;
+
+                if (elapsedSeconds > MAX_RUNTIME_SECONDS) {
+                    clearInterval(statusPollInterval);
+                    statusPollInterval = null;
+                    updateStatus('⏱️ 任务运行时间过长，已停止监控。');
+                    resetUI();
+                    showToast('任务运行时间过长，已停止监控', 'warning');
+                    return;
+                }
+
+                try {
+                    const response = await getVideoGenerationStatus(taskId);
+
+                    if (!response.success) {
+                        consecutiveFailures++;
+                        if (consecutiveFailures >= 5) {
+                            clearInterval(statusPollInterval);
+                            statusPollInterval = null;
+                            updateStatus('❌ 任务状态查询失败，已停止监控');
+                            resetUI();
+                            showToast('任务状态查询失败，请检查后端服务', 'error');
+                        }
+                        return;
+                    }
+
+                    if (!response.data) {
+                        consecutiveFailures++;
+                        if (consecutiveFailures >= 5) {
+                            clearInterval(statusPollInterval);
+                            statusPollInterval = null;
+                            updateStatus('❌ 任务不存在，已停止监控');
+                            resetUI();
+                        }
+                        return;
+                    }
+
+                    consecutiveFailures = 0;
+
+                    const task = response.data;
+                    const status = task.status;
+
+                    if (status === 'pending') {
+                        updateProgress(10, '任务排队中...');
+                        lastProgress = 10;
+                    } else if (status === 'running') {
+                        let progress = 30;
+                        if (elapsedSeconds <= 30) {
+                            progress = 30 + Math.floor((elapsedSeconds / 30) * 10);
+                        } else if (elapsedSeconds <= 90) {
+                            progress = 40 + Math.floor(((elapsedSeconds - 30) / 60) * 10);
+                        } else if (elapsedSeconds <= 150) {
+                            progress = 50 + Math.floor(((elapsedSeconds - 90) / 60) * 10);
+                        } else if (elapsedSeconds <= 210) {
+                            progress = 60 + Math.floor(((elapsedSeconds - 150) / 60) * 10);
+                        } else if (elapsedSeconds <= 270) {
+                            progress = 70 + Math.floor(((elapsedSeconds - 210) / 60) * 10);
+                        } else {
+                            progress = Math.min(80 + Math.floor(((elapsedSeconds - 270) / 60) * 10), 90);
+                        }
+
+                        if (progress < lastProgress) {
+                            progress = lastProgress;
+                        } else if (progress === lastProgress && elapsedSeconds > 60) {
+                            progress = Math.min(lastProgress + 0.5, 90);
+                        }
+
+                        lastProgress = progress;
+
+                        const minutes = Math.floor(elapsedSeconds / 60);
+                        const seconds = Math.floor(elapsedSeconds % 60);
+                        const timeStr = minutes > 0 ? `${minutes}分${seconds}秒` : `${seconds}秒`;
+                        updateProgress(progress, `生成中... (已运行 ${timeStr})`);
+                    } else if (status === 'completed') {
+                        clearInterval(statusPollInterval);
+                        statusPollInterval = null;
+
+                        updateProgress(100, '生成完成！');
+                        updateStatus('✅ 视频生成成功！');
+
+                        const videoUrl = `${getApiBaseUrl()}/videos/${taskId}.mp4`;
+                        displayVideo(videoUrl, task);
+
+                        resetUI();
+                        showToast('视频生成成功！', 'success');
+
+                    } else if (status === 'failed' || status === 'cancelled') {
+                        clearInterval(statusPollInterval);
+                        statusPollInterval = null;
+
+                        const error = task.error || (status === 'cancelled' ? '任务已取消' : '未知错误');
+                        updateStatus(`❌ ${status === 'cancelled' ? '任务已取消' : '生成失败'}: ${error}`);
+                        showToast(status === 'cancelled' ? '任务已取消' : ('生成失败: ' + error), 'error');
+                        resetUI();
+                    }
+                } catch (error) {
+                    console.error('状态查询异常:', error);
+                    consecutiveFailures++;
+
+                    if (consecutiveFailures >= 5) {
+                        clearInterval(statusPollInterval);
+                        statusPollInterval = null;
+                        updateStatus('❌ 状态查询失败，已停止监控');
+                        resetUI();
+                        showToast('状态查询失败，请检查后端服务', 'error');
+                    }
+                }
+            }, 2000);
+        }
+
+        // 显示视频
+        function displayVideo(videoUrl, task) {
+            const video = document.getElementById('videoOutput');
+            const videoContainer = document.getElementById('videoContainer');
+            const placeholder = document.getElementById('videoPlaceholder');
+
+            // 添加时间戳参数，避免缓存问题
+            const urlWithTimestamp = videoUrl + (videoUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+
+            // 设置视频源
+            video.src = urlWithTimestamp;
+            video.load();
+
+            // 显示视频容器，隐藏占位符
+            videoContainer.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+
+            // 处理视频加载错误
+            video.onerror = function (e) {
+                console.error('视频加载失败:', videoUrl, e);
+                showToast('视频加载失败，请检查视频文件是否存在', 'error');
+                videoContainer.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+                placeholder.textContent = '视频加载失败';
+            };
+
+            // 视频可以播放时显示控制按钮和信息
+            video.oncanplay = function () {
+                console.log('视频可以播放:', videoUrl);
+                document.getElementById('videoControls').style.display = 'flex';
+                document.getElementById('videoInfo').style.display = 'block';
+
+                if (task && task.generation_time) {
+                    document.getElementById('generationTime').textContent = `${task.generation_time.toFixed(2)} 秒`;
+                }
+                if (task && task.unique_id) {
+                    document.getElementById('taskId').textContent = task.unique_id.substring(0, 16) + '...';
+                }
+            };
+        }
+
+        // 终止任务
+        async function cancelGeneration() {
+            if (!currentTaskId) {
+                return;
+            }
+
+            if (!confirm('确定要终止当前任务吗？')) {
+                return;
+            }
+
+            try {
+                const apiUrl = getApiBaseUrl();
+                const response = await fetch(`${apiUrl}/generate_video/cancel/${currentTaskId}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('任务已终止', 'info');
+                } else {
+                    showToast('终止任务失败: ' + (data.error || '未知错误'), 'error');
+                }
+            } catch (error) {
+                console.error('终止任务失败:', error);
+                showToast('终止任务失败: ' + error.message, 'error');
+            }
+
+            resetUI();
+        }
+
+        // 下载视频
+        function downloadVideo() {
+            const video = document.getElementById('videoOutput');
+            if (!video.src) {
+                showToast('视频未加载', 'error');
+                return;
+            }
+            const a = document.createElement('a');
+            a.href = video.src;
+            a.download = `nerffacespeech_${Date.now()}.mp4`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showToast('视频下载已开始', 'success');
+        }
+
+        // 全屏播放
+        function fullscreenVideo() {
+            const video = document.getElementById('videoOutput');
+            if (video.requestFullscreen) {
+                video.requestFullscreen();
+            } else if (video.webkitRequestFullscreen) {
+                video.webkitRequestFullscreen();
+            } else if (video.mozRequestFullScreen) {
+                video.mozRequestFullScreen();
+            } else if (video.msRequestFullscreen) {
+                video.msRequestFullscreen();
+            }
+        }
+
+        // 更新状态
+        function updateStatus(message) {
+            document.getElementById('statusBox').textContent = message;
+        }
+
+        // 更新进度
+        function updateProgress(percent, text) {
+            document.getElementById('progressFill').style.width = percent + '%';
+            document.getElementById('progressText').textContent = text || '处理中...';
+            document.getElementById('progressPercent').textContent = Math.round(percent) + '%';
+        }
+
+        // 禁用/启用输入
+        function setInputsDisabled(disabled) {
+            document.getElementById('characterInput').disabled = disabled;
+            document.getElementById('modelSelect').disabled = disabled;
+            document.getElementById('refreshBtn').disabled = disabled;
+            const refreshCharacterBtn = document.getElementById('refreshCharacterBtn');
+            if (refreshCharacterBtn) refreshCharacterBtn.disabled = disabled;
+            document.getElementById('recordBtn').disabled = disabled;
+            document.getElementById('audioFileInput').disabled = disabled;
+        }
+
+        // 重置UI
+        function resetUI() {
+            if (statusPollInterval) {
+                clearInterval(statusPollInterval);
+                statusPollInterval = null;
+            }
+
+            currentTaskId = null;
+            setInputsDisabled(false);
+            document.getElementById('generateBtn').style.display = 'block';
+            document.getElementById('cancelBtn').style.display = 'none';
+            document.getElementById('progressContainer').style.display = 'none';
+        }
+
+        // 显示提示消息
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+
+            const colors = {
+                success: '#4ade80',
+                error: '#ef4444',
+                info: '#3b82f6'
+            };
+            toast.style.borderLeft = `4px solid ${colors[type] || colors.info}`;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+
+        // 页面卸载时清理
+        window.addEventListener('beforeunload', () => {
+            if (statusPollInterval) {
+                clearInterval(statusPollInterval);
+            }
+            if (isRecording) {
+                stopRecording();
+            }
+        });
+    </script>
+</body>
+
+</html>

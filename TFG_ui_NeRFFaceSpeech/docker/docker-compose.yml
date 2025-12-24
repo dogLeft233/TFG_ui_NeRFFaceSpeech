@@ -1,0 +1,51 @@
+services:
+  nerffacespeech:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: nerffacespeech:latest
+    container_name: nerffacespeech
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - CUDA_VISIBLE_DEVICES=0
+      - PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+      - TORCH_HOME=/app/assets/.cache/torch
+      - XDG_CACHE_HOME=/app/assets/.cache
+      - HF_HOME=/app/assets/.cache/huggingface
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_DIR=/etc/ssl/certs
+    volumes:
+      # 缓存目录（读写，持久化模型）
+      - ../assets/.cache:/app/assets/.cache:rw
+      
+      # 模型目录（读写，持久化模型）
+      - ../assets/models:/app/assets/models:rw
+      
+      # 数据目录（读写）
+      - ../data:/app/data:rw
+      - ../database:/app/database:rw
+      
+      # 输出目录（读写）
+      - ../output:/app/output:rw
+      - ../outputs:/app/outputs:rw
+      
+      # 代码目录（只读，可选）
+      # 如果需要在运行时修改代码或恢复模型软链接，需要使用 :rw
+      - ../NeRFFaceSpeech_Code:/app/NeRFFaceSpeech_Code:rw
+      - ../eval_pipline:/app/eval_pipline:rw
+      
+      # 其他项目文件（只读）
+      - ../download_models.py:/app/download_models.py:ro
+      - ../run_eval_pipeline.sh:/app/run_eval_pipeline.sh:ro
+    working_dir: /app
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+    restart: unless-stopped

@@ -1,0 +1,3976 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>人机对话 - NeRFFaceSpeech</title>
+  <style>
+    :root {
+      --primary: #1e40af;
+      --primary-2: #3b82f6;
+      --bg: #0b1020;
+      --card: rgba(255, 255, 255, 0.06);
+      --border: rgba(255, 255, 255, 0.14);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --g1: rgba(59, 130, 246, 0.16);
+      --g2: rgba(14, 165, 233, 0.14);
+      --g3: rgba(56, 189, 248, 0.12);
+      --card-bg: rgb(24, 66, 134);
+      --base-font-size: 14px;
+    }
+
+    body.theme-tech {
+      --primary: #1e40af;
+      --primary-2: #3b82f6;
+      --bg: #0b1020;
+      --card: rgba(255, 255, 255, 0.06);
+      --border: rgba(255, 255, 255, 0.14);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --g1: rgba(59, 130, 246, 0.16);
+      --g2: rgba(14, 165, 233, 0.14);
+      --g3: rgba(56, 189, 248, 0.12);
+      --card-bg: rgb(24, 66, 134);
+    }
+    body.theme-warm {
+      --primary: #f97316; /* 主色调：橙色，用于选中状态、强调按钮 */
+      --primary-2: #ea580c; /* 次要主色：深橙色，用于渐变、次要强调 */
+      --bg: #fff8f0; /* 页面背景色：浅暖色背景 */
+      --card: rgba(255,255,255,0.9); /* 卡片背景：半透明白色 */
+      --border: rgba(249,115,22,0.2); /* 边框颜色：半透明橙色边框 */
+      --text: #1f2937; /* 主文字颜色：深灰色文字 */
+      --muted: #6b7280; /* 次要文字颜色：灰色 */
+      --g1: rgba(251,191,36,0.15); /* 渐变1：黄色渐变点1 */
+      --g2: rgba(249,115,22,0.12); /* 渐变2：橙色渐变点2 */
+      --g3: rgba(234,88,12,0.1); /* 渐变3：深橙色渐变点3 */
+      --card-bg: rgba(251,191,36,0.15); /* 卡片背景色：浅黄色 */
+    }
+    body.theme-minimal {
+      --primary: #6b7280; /* 主色调：灰色，用于选中状态、强调按钮 */
+      --primary-2: #4b5563; /* 次要主色：深灰色，用于渐变、次要强调 */
+      --bg: #f5f5f5; /* 页面背景色：浅灰色背景 */
+      --card: #ffffff; /* 卡片背景：白色 */
+      --border: #e5e7eb; /* 边框颜色：浅灰色边框 */
+      --text: #111827; /* 主文字颜色：深色文字 */
+      --muted: #6b7280; /* 次要文字颜色：灰色 */
+      --g1: rgba(107,114,128,0.08); /* 渐变1：灰色渐变点1 */
+      --g2: rgba(75,85,99,0.07); /* 渐变2：深灰色渐变点2 */
+      --g3: rgba(156,163,175,0.06); /* 渐变3：浅灰色渐变点3 */
+      --card-bg: rgba(107,114,128,0.1); /* 卡片背景色：浅灰色 */
+    }
+    * { box-sizing: border-box; }
+    :root {
+      --base-font-size: 14px; /* 基础字号 */
+    }
+    html {
+      font-size: var(--base-font-size);
+    }
+    body {
+      margin: 0;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 1rem; /* 使用rem单位，基于根元素字体大小 */
+      background: radial-gradient(circle at 20% 20%, var(--g1), transparent 25%),
+                  radial-gradient(circle at 80% 30%, var(--g2), transparent 25%),
+                  radial-gradient(circle at 50% 80%, var(--g3), transparent 22%),
+                  var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    /* 设置按钮 */
+    .settings-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .settings-btn:hover {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    
+    /* 侧边栏遮罩 */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 2000;
+      transition: opacity 0.3s ease;
+    }
+    .sidebar-overlay.active {
+      display: block;
+    }
+    
+    /* 侧边栏 */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      right: -400px;
+      width: 400px;
+      height: 100vh;
+      background: var(--bg);
+      border-left: 1px solid var(--border);
+      z-index: 2001;
+      transition: right 0.3s ease;
+      overflow-y: auto;
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
+    }
+    .sidebar.active {
+      right: 0;
+    }
+    .sidebar-content {
+      padding: 24px;
+    }
+    .sidebar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-header h2 {
+      margin: 0;
+      font-size: 20px;
+      color: var(--text);
+    }
+    .sidebar-close {
+      background: none;
+      border: none;
+      font-size: 28px;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+    .sidebar-close:hover {
+      background: var(--card-bg);
+      color: var(--text);
+    }
+    
+    /* 分页标签 */
+    .sidebar-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-tab {
+      padding: 10px 20px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .sidebar-tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+    .sidebar-tab:hover {
+      color: var(--text);
+    }
+    
+    /* 分页内容 */
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    
+    /* 选项网格 */
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .option-card {
+      padding: 16px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      background: var(--card-bg);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+    .option-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .option-card.selected {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #fff;
+    }
+    .option-card.selected .option-name {
+      color: #fff;
+    }
+    .option-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .option-desc {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .option-card.selected .option-desc {
+      color: rgba(255, 255, 255, 0.9);
+    }
+    
+    /* 字号选择 */
+    .font-size-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .font-size-btn {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      background: var(--card-bg);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .font-size-btn:hover {
+      border-color: var(--primary);
+    }
+    .font-size-btn.selected {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #fff;
+    }
+    .font-size-custom {
+      margin-top: 16px;
+    }
+    .font-size-custom input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card-bg);
+      color: var(--text);
+      font-size: 14px;
+    }
+    
+    .page { max-width: 1400px; width: 94vw; margin: 0 auto; padding: 20px 24px 40px; min-height: 100vh; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    h1 { margin: 0; font-size: 24px; letter-spacing: 0.4px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 12px; background: rgba(59,130,246,0.2); color: #c7d2fe; font-size: 12px; border: 1px solid rgba(96,165,250,0.5); }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px; box-shadow: 0 12px 32px rgba(0,0,0,0.25); }
+    label { font-weight: 700; margin-bottom: 6px; display: block; }
+    textarea {
+      width: 100%; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px;
+      font-size: 15px; background: rgba(255,255,255,0.04); color: var(--text);
+      outline: none; transition: border-color .15s ease, box-shadow .15s ease;
+      min-height: 140px; resize: vertical;
+    }
+    textarea:focus {
+      border-color: rgba(96,165,250,0.8);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.25);
+    }
+    button.primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      border: 1px solid var(--primary-2);
+      color: #fff; font-weight: 700; border-radius: 12px; padding: 12px 14px; cursor: pointer; width: 100%;
+    }
+    .log-box {
+      background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      min-height: 120px; white-space: pre-wrap; word-break: break-all;
+    }
+    
+    /* 进度条样式 */
+    .progress-container {
+      margin-top: 12px;
+      margin-bottom: 12px;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--primary-2));
+      width: 0%;
+      transition: width 0.3s ease;
+      border-radius: 4px;
+    }
+    .progress-text {
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .step-indicator {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .step-item {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      transition: all 0.3s ease;
+    }
+    .step-item.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .step-item.completed {
+      background: rgba(34,197,94,0.2);
+      color: #4ade80;
+      border-color: rgba(34,197,94,0.4);
+    }
+    a { color: #bfdbfe; text-decoration: none; }
+    footer {
+      margin-top: 24px;
+      padding: 12px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    /* 聊天界面样式 */
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 160px);
+      max-height: 900px;
+      min-height: 700px;
+    }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+    .message {
+      display: flex;
+      gap: 12px;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .message.user {
+      justify-content: flex-end;
+    }
+    .message.assistant {
+      justify-content: flex-start;
+    }
+    .message-bubble {
+      max-width: 70%;
+      padding: 12px 16px;
+      border-radius: 16px;
+      word-wrap: break-word;
+      position: relative;
+    }
+    .message.user .message-bubble {
+      background: var(--primary);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .message.assistant .message-bubble {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+    .message-time {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+      text-align: right;
+    }
+    .message.assistant .message-time {
+      text-align: left;
+    }
+    .message-audio {
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .audio-player {
+      flex: 1;
+      height: 32px;
+    }
+    .audio-player audio {
+      width: 100%;
+      height: 32px;
+    }
+    
+    .chat-input-area {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .input-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+    .input-row textarea {
+      flex: 1;
+      min-height: 60px;
+      max-height: 120px;
+      resize: vertical;
+    }
+    .input-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      font-size: 18px;
+    }
+    .icon-btn:hover {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .icon-btn.recording {
+      background: #ef4444;
+      color: #fff;
+      border-color: #ef4444;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .icon-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .volume-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .volume-control input[type="range"] {
+      width: 100px;
+    }
+    .volume-control.muted {
+      opacity: 0.5;
+    }
+    .file-input-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+    .file-input-wrapper input[type="file"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .typing-indicator {
+      display: flex;
+      gap: 4px;
+      padding: 12px 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      border-bottom-left-radius: 4px;
+      max-width: 70px;
+      position: relative;
+    }
+    .typing-indicator-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .cancel-typing-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+    .cancel-typing-btn:hover {
+      background: #ef4444;
+      color: #fff;
+      border-color: #ef4444;
+    }
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      animation: typing 1.4s infinite;
+    }
+    .typing-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    .typing-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+    @keyframes typing {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-10px); }
+    }
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: 40px;
+    }
+    
+    /* 消息状态 */
+    .message-status {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .message.user .message-status {
+      justify-content: flex-end;
+    }
+    .message-status.sending::before {
+      content: "⏳";
+      animation: spin 1s linear infinite;
+    }
+    .message-status.sent::before {
+      content: "✓";
+    }
+    .message-status.error::before {
+      content: "❌";
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    /* 对话管理侧边栏 */
+    .chat-sidebar {
+      position: fixed;
+      left: -320px;
+      top: 0;
+      width: 320px;
+      height: 100vh;
+      background: var(--bg);
+      border-right: 1px solid var(--border);
+      z-index: 1500;
+      transition: left 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
+    }
+    .chat-sidebar.active {
+      left: 0;
+    }
+    .chat-sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .chat-sidebar-header h3 {
+      margin: 0;
+      font-size: 18px;
+      color: var(--text);
+    }
+    .chat-sidebar-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+    .chat-sidebar-close:hover {
+      background: var(--card-bg);
+      color: var(--text);
+    }
+    .chat-sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    .chat-sidebar-actions {
+      padding: 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .sidebar-btn {
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 14px;
+      text-align: left;
+    }
+    .sidebar-btn:hover {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .sidebar-btn.danger:hover {
+      background: #ef4444;
+      border-color: #ef4444;
+    }
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .history-item {
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .history-item:hover {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .history-item.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .history-item-title {
+      font-weight: 500;
+      margin-bottom: 4px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+    .history-item-title input {
+      flex: 1;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 8px;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+      outline: none;
+    }
+    .history-item-title input:focus {
+      border-color: var(--primary);
+      background: var(--card-bg);
+    }
+    .history-item-edit {
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .history-item:hover .history-item-edit {
+      opacity: 1;
+    }
+    .history-item-edit:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .history-item-time {
+      font-size: 11px;
+      opacity: 0.7;
+    }
+    .retry-btn {
+      margin-top: 8px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s ease;
+    }
+    .retry-btn:hover {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    
+    /* 流式输出动画 */
+    .streaming-text {
+      display: inline;
+    }
+    .streaming-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1em;
+      background: var(--primary);
+      animation: blink 1s infinite;
+      margin-left: 2px;
+    }
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+    
+    /* 使用 talk.html 的样式 */
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .back-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--primary-2);
+    }
+    
+    /* 角色和模型选择弹窗 */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 3000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+    .modal-header {
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-header h2 {
+      margin: 0;
+      font-size: 20px;
+      color: var(--text);
+    }
+    .modal-body {
+      margin-bottom: 20px;
+    }
+    .modal-footer {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+    .modal select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card-bg);
+      color: var(--text);
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    .modal label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .modal .select-wrapper {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .modal .select-wrapper select {
+      flex: 1;
+      margin-bottom: 0;
+    }
+    .modal .select-wrapper button {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card-bg);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .modal .select-wrapper button:hover {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    
+    /* 视频播放按钮 */
+    .video-play-btn {
+      margin-top: 8px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .video-play-btn:hover {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .video-play-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .video-container {
+      margin-top: 8px;
+      display: none;
+    }
+    .video-container.active {
+      display: block;
+    }
+    .video-container video {
+      width: 100%;
+      max-width: 500px;
+      border-radius: 8px;
+      background: #000;
+    }
+    
+    /* 响应模式选择器 */
+    .response-mode-selector {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+      padding: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    
+    .response-mode-selector label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-right: 4px;
+    }
+    
+    .response-mode-radio {
+      display: none;
+    }
+    
+    .response-mode-label {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 13px;
+      font-weight: 500;
+      user-select: none;
+    }
+    
+    .response-mode-label:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--primary-2);
+    }
+    
+    .response-mode-radio:checked + .response-mode-label {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    
+    /* 语音气泡样式（仅显示音频时长，点击播放） */
+    .audio-bubble {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: 18px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 80px;
+      justify-content: center;
+    }
+    
+    .audio-bubble:hover {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    
+    .audio-bubble-icon {
+      font-size: 16px;
+    }
+    
+    .audio-bubble-duration {
+      font-size: 13px;
+      font-weight: 500;
+    }
+    
+    /* 视频框样式（小正方形） */
+    .video-preview-box {
+      width: 350px;
+      height: 350px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 2px solid var(--border);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+    
+    .video-preview-box:hover {
+      border-color: var(--primary);
+      transform: scale(1.05);
+    }
+    
+    .video-preview-box video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .video-play-icon {
+      position: absolute;
+      font-size: 40px;
+      color: rgba(255, 255, 255, 0.9);
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+    }
+  </style>
+  <script src="settings.js"></script>
+  <script src="api.js"></script>
+</head>
+<body>
+  <button class="settings-btn" id="settingsBtn">⚙️ 设置</button>
+  
+  <!-- 角色和模型选择弹窗 -->
+  <div class="modal-overlay" id="characterModelModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>选择角色和模型</h2>
+      </div>
+      <div class="modal-body">
+        <label for="modalCharacterSelect">角色</label>
+        <div class="select-wrapper">
+          <select id="modalCharacterSelect">
+            <option value="">加载中...</option>
+          </select>
+          <button id="refreshCharacterBtn" title="刷新角色列表">🔄</button>
+        </div>
+        <label for="modalModelSelect">模型</label>
+        <div class="select-wrapper">
+          <select id="modalModelSelect">
+            <option value="">加载中...</option>
+          </select>
+          <button id="refreshModelBtn" title="刷新模型列表">🔄</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="primary" id="confirmCharacterModelBtn">开始聊天</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 对话管理侧边栏 -->
+  <div class="chat-sidebar" id="chatSidebar">
+    <div class="chat-sidebar-header">
+      <h3>对话管理</h3>
+      <button class="chat-sidebar-close" id="chatSidebarClose">×</button>
+    </div>
+    <div class="chat-sidebar-content">
+      <div class="history-list" id="historyList">
+        <div class="history-item active" data-id="current">
+          <div class="history-item-title">当前对话</div>
+          <div class="history-item-time">进行中</div>
+        </div>
+      </div>
+    </div>
+    <div class="chat-sidebar-actions">
+      <button class="sidebar-btn" id="newChatBtn">➕ 新建对话</button>
+      <button class="sidebar-btn" id="exportChatBtn">📥 导出对话记录</button>
+      <button class="sidebar-btn danger" id="clearChatBtn">🗑️ 清空当前对话</button>
+    </div>
+  </div>
+  
+  <!-- 侧边栏遮罩 -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  
+  <!-- 设置侧边栏 -->
+  <div class="sidebar" id="settingsSidebar">
+    <div class="sidebar-content">
+      <div class="sidebar-header">
+        <h2>设置</h2>
+        <button class="sidebar-close" id="sidebarClose">×</button>
+      </div>
+      
+      <div class="sidebar-tabs">
+        <button class="sidebar-tab active" data-tab="theme">主题</button>
+        <button class="sidebar-tab" data-tab="font">字体</button>
+      </div>
+      
+      <!-- 主题设置 -->
+      <div class="tab-content active" id="themeTab">
+        <div class="options-grid">
+          <div class="option-card" data-theme="tech">
+            <div class="option-name">科技风</div>
+            <div class="option-desc">深蓝色科技感</div>
+          </div>
+          <div class="option-card" data-theme="warm">
+            <div class="option-name">温馨风</div>
+            <div class="option-desc">暖色调温馨</div>
+          </div>
+          <div class="option-card" data-theme="minimal">
+            <div class="option-name">简约风</div>
+            <div class="option-desc">灰色简约</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 字体设置 -->
+      <div class="tab-content" id="fontTab">
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 8px; color: var(--text); font-weight: 500;">字体样式</label>
+          <div class="options-grid">
+            <div class="option-card" data-font="SimSun">
+              <div class="option-name">宋体</div>
+              <div class="option-desc">SimSun</div>
+            </div>
+            <div class="option-card" data-font="SimHei">
+              <div class="option-name">黑体</div>
+              <div class="option-desc">SimHei</div>
+            </div>
+            <div class="option-card" data-font="Microsoft YaHei">
+              <div class="option-name">微软雅黑</div>
+              <div class="option-desc">Microsoft YaHei</div>
+            </div>
+            <div class="option-card" data-font="Arial">
+              <div class="option-name">Arial</div>
+              <div class="option-desc">Arial</div>
+            </div>
+            <div class="option-card" data-font="Times New Roman">
+              <div class="option-name">Times New Roman</div>
+              <div class="option-desc">Times New Roman</div>
+            </div>
+            <div class="option-card" data-font="Inter">
+              <div class="option-name">Inter</div>
+              <div class="option-desc">Inter（默认）</div>
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <label style="display: block; margin-bottom: 8px; color: var(--text); font-weight: 500;">字号大小</label>
+          <div class="font-size-group">
+            <button class="font-size-btn" data-size="small">小</button>
+            <button class="font-size-btn" data-size="medium">中</button>
+            <button class="font-size-btn" data-size="large">大</button>
+            <button class="font-size-btn" data-size="custom">自定义</button>
+          </div>
+          <div class="font-size-custom" id="customSizeInput" style="display: none;">
+            <input type="number" id="customSizeValue" placeholder="输入字号（px）" min="10" max="24" value="14">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page">
+    <header>
+      <a href="index.html" class="back-btn">← 返回首页</a>
+      <h1>💬 人机对话</h1>
+      <button class="back-btn" id="chatManageBtn" style="margin: 0;">💬 对话管理</button>
+    </header>
+
+    <div class="card chat-container">
+      <!-- 聊天消息区域 -->
+      <div class="chat-messages" id="chatMessages">
+        <div class="empty-state">
+          <p>👋 开始对话吧！输入文字或录制语音与AI交流</p>
+        </div>
+      </div>
+      
+      <!-- 输入区域 -->
+      <div class="chat-input-area">
+        <!-- 响应模式选择器 -->
+        <div class="response-mode-selector">
+          <label>响应模式:</label>
+          <input type="radio" name="responseMode" id="modeText" value="text" class="response-mode-radio" checked>
+          <label for="modeText" class="response-mode-label">📝 文本</label>
+          
+          <input type="radio" name="responseMode" id="modeAudio" value="audio" class="response-mode-radio">
+          <label for="modeAudio" class="response-mode-label">🔊 语音</label>
+          
+          <input type="radio" name="responseMode" id="modeVideo" value="video" class="response-mode-radio">
+          <label for="modeVideo" class="response-mode-label">🎬 视频</label>
+        </div>
+        
+        <!-- 输入框和按钮 -->
+        <div class="input-row">
+          <textarea id="chatInput" placeholder="输入消息... (Shift+Enter换行，Enter发送)"></textarea>
+          <div class="input-actions">
+            <!-- 语音录制按钮 -->
+            <button class="icon-btn" id="recordBtn" title="录制语音">🎤</button>
+            <!-- 上传音频按钮 -->
+            <div class="file-input-wrapper">
+              <input type="file" id="audioUpload" accept="audio/*">
+              <button class="icon-btn" id="uploadBtn" title="上传音频文件">📁</button>
+            </div>
+            <!-- 发送按钮 -->
+            <button class="primary" id="sendBtn" style="width: auto; padding: 10px 20px;">发送</button>
+          </div>
+        </div>
+        
+        <!-- 进度显示区域 -->
+        <div class="progress-container" id="chatProgressContainer" style="display: none; margin-top: 12px;">
+          <div class="progress-bar">
+            <div class="progress-fill" id="chatProgressFill"></div>
+      </div>
+          <div class="progress-text">
+            <span id="chatProgressText">准备中...</span>
+            <span id="chatProgressPercent">0%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    北京理工大学 · NeRFFaceSpeech 团队
+  </footer>
+
+  <script>
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+    let currentAudioBase64 = null;
+    let recordingTimer = null;
+    let recordingStartTime = null;
+    let isMuted = false;
+    let character = null; // 当前对话的角色（从聊天历史中获取）
+    let model = null; // 当前对话的模型（从聊天历史中获取）
+    let currentChatId = "current"; // 当前对话ID（前端使用的ID）
+    let currentSessionId = null; // 当前会话ID（后端数据库的session_id）
+    let chatHistory = {}; // 存储所有对话历史 {chatId: {messages: [], title: "", time: "", sessionId: null, character: "", model: ""}}
+    let isWaitingForAudio = false; // 是否正在等待音频返回
+    let isWaitingForVideo = false; // 是否正在等待视频生成
+    let isTranscribing = false; // 是否正在处理语音识别
+    let abortController = null; // 用于取消正在进行的请求
+    let logPollInterval = null; // 日志轮询间隔ID
+    let currentStage = null; // 当前阶段：'llm', 'tts', 'video'
+    let stageStartTime = null; // 当前阶段开始时间
+
+    // ==================== 对话管理功能 ====================
+    const chatManageBtn = document.getElementById("chatManageBtn");
+    const chatSidebar = document.getElementById("chatSidebar");
+    const chatSidebarClose = document.getElementById("chatSidebarClose");
+    const newChatBtn = document.getElementById("newChatBtn");
+    const exportChatBtn = document.getElementById("exportChatBtn");
+    const clearChatBtn = document.getElementById("clearChatBtn");
+
+    // 打开/关闭对话管理侧边栏
+    if (chatManageBtn && chatSidebar) {
+        chatManageBtn.addEventListener("click", () => {
+            chatSidebar.classList.toggle("active");
+            if (chatSidebar.classList.contains("active")) {
+                updateHistoryList();
+            }
+        });
+    }
+
+    if (chatSidebarClose) {
+        chatSidebarClose.addEventListener("click", () => {
+            chatSidebar.classList.remove("active");
+        });
+    }
+
+    // 新建对话
+    if (newChatBtn) {
+        newChatBtn.addEventListener("click", () => {
+            const newChatId = `chat-${Date.now()}`;
+            chatHistory[newChatId] = {
+                messages: [],
+                title: "新对话",
+                time: new Date().toISOString()
+            };
+            saveChatHistory();
+            switchChat(newChatId);
+            // 显示角色和模型选择弹窗
+            setTimeout(() => {
+                showCharacterModelModal();
+            }, 300);
+        });
+    }
+
+    // 清空当前对话
+    if (clearChatBtn) {
+        clearChatBtn.addEventListener("click", () => {
+            if (confirm("确定要清空当前对话吗？")) {
+                if (chatHistory[currentChatId]) {
+                    chatHistory[currentChatId].messages = [];
+                    chatHistory[currentChatId].title = "当前对话";
+                    chatHistory[currentChatId].time = new Date().toISOString();
+                    saveChatHistory();
+                }
+                const chatMessages = document.getElementById("chatMessages");
+                if (chatMessages) {
+                    chatMessages.innerHTML = '<div class="empty-state"><p>👋 开始对话吧！输入文字或录制语音与AI交流</p></div>';
+                }
+                updateHistoryList();
+            }
+        });
+    }
+
+    // 导出对话记录
+    if (exportChatBtn) {
+        exportChatBtn.addEventListener("click", () => {
+            if (!chatHistory[currentChatId] || chatHistory[currentChatId].messages.length === 0) {
+                alert("当前对话为空，无法导出");
+                return;
+            }
+            
+            const messages = chatHistory[currentChatId].messages;
+            let exportText = `对话记录 - ${new Date().toLocaleString('zh-CN')}\n`;
+            exportText += "=".repeat(50) + "\n\n";
+            
+            messages.forEach(msg => {
+                const role = msg.isUser ? "用户" : "AI";
+                const time = new Date(msg.time).toLocaleString('zh-CN');
+                exportText += `[${time}] ${role}:\n${msg.text}\n\n`;
+            });
+            
+            // 创建下载链接
+            const blob = new Blob([exportText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `对话记录_${new Date().toISOString().slice(0, 10)}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    // 音量控制元素（如果存在）
+    const volumeSlider = document.getElementById("volumeSlider");
+    const volumeControl = document.getElementById("volumeControl");
+    const volumeBtn = document.getElementById("volumeBtn");
+    const volumeValue = document.getElementById("volumeValue");
+    
+    // 后端API地址 - 自动检测服务器地址
+    // 自动检测服务器地址
+    const FASTAPI_URL = (() => {
+      const currentOrigin = window.location.origin;
+      const currentHostname = window.location.hostname;
+      const currentPort = window.location.port;
+      const currentPath = window.location.pathname;
+      const currentProtocol = window.location.protocol;
+      
+      // 如果当前端口是7860（前端服务器），则使用后端服务器（8000端口）
+      if (currentPort === '7860') {
+        const backendUrl = `${currentProtocol}//${currentHostname}:8000`;
+        console.log('✅ 检测到前端服务器（端口7860），使用后端API服务器:', backendUrl);
+        return backendUrl;
+      }
+      
+      // 如果路径包含 /webui/，说明是挂载在FastAPI下的
+      if (currentPath.includes('/webui/')) {
+        console.log('✅ 检测到FastAPI静态文件服务，使用当前origin:', currentOrigin);
+        return currentOrigin;
+      }
+      
+      // 否则使用当前origin
+      console.log('✅ 使用当前origin作为API服务器:', currentOrigin);
+      return currentOrigin;
+    })();
+    
+    console.log('最终确定的API服务器地址:', FASTAPI_URL);
+    let isStreaming = false; // 是否正在流式输出
+    let streamingMessageId = null; // 正在流式输出的消息ID
+
+    // 页面加载时初始化
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 应用设置（从数据库读取）
+      try {
+            const settings = await fetchSettings();
+            await Promise.all([
+                applySettingsOnly(settings),
+                updateThemeSelection(settings),
+                updateFontSelection(settings),
+                updateFontSizeSelection(settings)
+            ]);
+      } catch (error) {
+        console.error('应用设置失败:', error);
+      }
+      
+        // 设置侧边栏控制
+      const settingsBtn = document.getElementById('settingsBtn');
+      const settingsSidebar = document.getElementById('settingsSidebar');
+      const sidebarOverlay = document.getElementById('sidebarOverlay');
+      const sidebarClose = document.getElementById('sidebarClose');
+      
+        if (settingsBtn && settingsSidebar) {
+            const openSidebar = () => {
+        settingsSidebar.classList.add('active');
+        sidebarOverlay.classList.add('active');
+            };
+      
+            const closeSidebar = () => {
+        settingsSidebar.classList.remove('active');
+        sidebarOverlay.classList.remove('active');
+            };
+      
+      settingsBtn.addEventListener('click', openSidebar);
+      if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
+      if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+      
+            // 标签切换
+      document.querySelectorAll('.sidebar-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          const targetTab = tab.dataset.tab;
+          document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+          tab.classList.add('active');
+          const targetContent = document.getElementById(targetTab + 'Tab');
+          if (targetContent) targetContent.classList.add('active');
+        });
+      });
+      
+      // 主题选择
+      document.querySelectorAll('[data-theme]').forEach(card => {
+        card.addEventListener('click', () => {
+          applyTheme(card.dataset.theme);
+        });
+      });
+      
+      // 字体选择
+      document.querySelectorAll('[data-font]').forEach(card => {
+        card.addEventListener('click', () => {
+          applyFont(card.dataset.font);
+        });
+      });
+      
+      // 字号选择
+      document.querySelectorAll('[data-size]').forEach(btn => {
+        btn.addEventListener('click', () => {
+                    if (btn.dataset.size === 'custom') {
+                        const customInput = document.getElementById('customSizeInput');
+                        if (customInput) customInput.style.display = 'block';
+                    } else {
+                        const customInput = document.getElementById('customSizeInput');
+                        if (customInput) customInput.style.display = 'none';
+          applyFontSize(btn.dataset.size);
+                    }
+        });
+      });
+      
+      // 自定义字号输入
+            const customSizeInput = document.getElementById('customSizeValue');
+            if (customSizeInput) {
+                customSizeInput.addEventListener('change', () => {
+            applyFontSize('custom');
+        });
+      }
+        }
+    });
+    
+    // 从数据库加载对话历史
+    async function loadChatHistoryFromDatabase() {
+      try {
+        const response = await fetch(`${FASTAPI_URL}/chat/sessions?limit=100`);
+        if (!response.ok) {
+          console.error("加载对话历史失败:", response.status);
+          return;
+        }
+        const data = await response.json();
+        if (data.success && data.data) {
+          const sessions = data.data;
+          
+          // 将数据库会话转换为前端格式
+          for (const session of sessions) {
+            const sessionId = session.session_id;
+            const frontendChatId = sessionId; // 使用session_id作为前端chatId
+            
+            // 获取该会话的所有消息
+            const messagesResponse = await fetch(`${FASTAPI_URL}/chat/sessions/${sessionId}/messages`);
+            if (messagesResponse.ok) {
+              const messagesData = await messagesResponse.json();
+              if (messagesData.success && messagesData.data && messagesData.data.length > 0) {
+                // 只加载有消息的会话（过滤空会话）
+                const messages = messagesData.data.map(msg => {
+                  // 根据content_type推断responseMode
+                  let responseMode = null;
+                  if (!msg.isUser && msg.content_type) {
+                    if (msg.content_type === 'text') {
+                      responseMode = 'text';
+                    } else if (msg.content_type === 'text+audio' || msg.content_type === 'audio') {
+                      responseMode = 'audio';
+                    } else if (msg.content_type === 'text+audio+video' || msg.content_type === 'video+audio' || msg.content_type === 'video') {
+                      responseMode = 'video';
+                    }
+                  }
+                  
+                  return {
+                  text: msg.text_content || '',
+                  isUser: msg.message_type === 'user',
+                  audioBase64: msg.audio_base64 || null,
+                  audioUrl: msg.audio_url || null,
+                  audioDuration: 0,
+                  messageId: msg.message_id,
+                  status: 'sent',
+                  time: msg.created_at,
+                  videoUrl: msg.video_url || null,
+                    videoTaskId: msg.video_task_id || null,
+                    responseMode: responseMode
+                  };
+                });
+                
+                chatHistory[frontendChatId] = {
+                  messages: messages,
+                  title: session.title || messages[0]?.text?.substring(0, 20) || '未命名对话',
+                  time: session.created_at,
+                  sessionId: sessionId,
+                  character: session.character || null,
+                  model: session.model_name || null
+                };
+              }
+            }
+          }
+          
+          updateHistoryList();
+        }
+      } catch (error) {
+        console.error("从数据库加载对话历史失败:", error);
+      }
+    }
+    
+    // 加载角色列表
+    async function loadCharacters(selectElement) {
+      try {
+        if (selectElement) {
+          selectElement.innerHTML = '<option value="">加载中...</option>';
+        }
+        const characters = await getCharacters();
+        if (selectElement) {
+          if (characters.length === 0) {
+            selectElement.innerHTML = '<option value="">未找到角色</option>';
+            return;
+          }
+          selectElement.innerHTML = characters.map(c => `<option value="${c}">${c}</option>`).join('');
+        }
+        return characters;
+      } catch (error) {
+        console.error('加载角色失败:', error);
+        if (selectElement) {
+          selectElement.innerHTML = '<option value="">加载失败</option>';
+        }
+        return [];
+      }
+    }
+    
+    // 加载模型列表
+    async function loadModels(selectElement) {
+      try {
+        if (selectElement) {
+          selectElement.innerHTML = '<option value="">加载中...</option>';
+        }
+        const models = await getModels();
+        if (selectElement) {
+          if (models.length === 0) {
+            selectElement.innerHTML = '<option value="">未找到模型</option>';
+            return;
+          }
+          selectElement.innerHTML = models.map(m => `<option value="${m}">${m}</option>`).join('');
+        }
+        return models;
+      } catch (error) {
+        console.error('加载模型失败:', error);
+        if (selectElement) {
+          selectElement.innerHTML = '<option value="">加载失败</option>';
+        }
+        return [];
+      }
+    }
+    
+    // 显示角色和模型选择弹窗
+    function showCharacterModelModal() {
+      const modal = document.getElementById('characterModelModal');
+      const characterSelect = document.getElementById('modalCharacterSelect');
+      const modelSelect = document.getElementById('modalModelSelect');
+      const confirmBtn = document.getElementById('confirmCharacterModelBtn');
+      const refreshCharacterBtn = document.getElementById('refreshCharacterBtn');
+      const refreshModelBtn = document.getElementById('refreshModelBtn');
+      
+      // 显示弹窗
+      modal.classList.add('active');
+      
+      // 加载角色和模型列表
+      loadCharacters(characterSelect);
+      loadModels(modelSelect);
+      
+      // 移除所有旧的事件监听器（通过克隆节点）
+      const newCharacterSelect = characterSelect.cloneNode(true);
+      characterSelect.parentNode.replaceChild(newCharacterSelect, characterSelect);
+      const newModelSelect = modelSelect.cloneNode(true);
+      modelSelect.parentNode.replaceChild(newModelSelect, modelSelect);
+      
+      // 重新获取元素引用
+      const charSelect = document.getElementById('modalCharacterSelect');
+      const modSelect = document.getElementById('modalModelSelect');
+      
+      // 加载角色和模型列表
+      loadCharacters(charSelect);
+      loadModels(modSelect);
+      
+      // 检查是否可以确认（使用新的元素引用）- 允许即使没有选择也能进入
+      const checkCanConfirm = () => {
+        // 不再禁用按钮，允许即使没有选择也能进入聊天
+        // const hasCharacter = charSelect.value && charSelect.value !== '';
+        // const hasModel = modSelect.value && modSelect.value !== '';
+        // confirmBtn.disabled = !(hasCharacter && hasModel);
+        confirmBtn.disabled = false;
+      };
+      
+      // 绑定新的事件监听器
+      charSelect.addEventListener('change', checkCanConfirm);
+      modSelect.addEventListener('change', checkCanConfirm);
+      
+      // 刷新按钮
+      refreshCharacterBtn.onclick = () => {
+        loadCharacters(charSelect).then(() => {
+          checkCanConfirm();
+        });
+      };
+      refreshModelBtn.onclick = () => {
+        loadModels(modSelect).then(() => {
+          checkCanConfirm();
+        });
+      };
+      
+      // 确认按钮 - 直接赋值 onclick，确保每次都是新的处理函数
+      confirmBtn.onclick = function() {
+        const selectedCharacter = charSelect.value || '';
+        const selectedModel = modSelect.value || '';
+        
+        // 允许即使没有选择也能进入（使用默认值或空值）
+        // 保存到当前对话
+        if (!chatHistory[currentChatId]) {
+          chatHistory[currentChatId] = {
+            messages: [],
+            title: "当前对话",
+            time: new Date().toISOString()
+          };
+        }
+        chatHistory[currentChatId].character = selectedCharacter || null;
+        chatHistory[currentChatId].model = selectedModel || null;
+        character = selectedCharacter || null;
+        model = selectedModel || null;
+        
+        // 关闭弹窗
+        modal.classList.remove('active');
+        saveChatHistory();
+        
+        // 显示提示
+        if (selectedCharacter && selectedModel) {
+          showToast(`已选择角色: ${selectedCharacter}, 模型: ${selectedModel}`, 'success');
+        } else {
+          showToast('已进入聊天页面（未选择角色和模型，将使用默认值）', 'info');
+        }
+      };
+      
+      // 允许即使加载失败也能点击开始聊天
+      confirmBtn.disabled = false;
+      
+      // 初始检查（延迟，等待选项加载完成）
+      setTimeout(checkCanConfirm, 500);
+    }
+    
+    // 初始化对话历史
+    async function initChatHistory() {
+      // 从数据库加载历史记录
+      await loadChatHistoryFromDatabase();
+      
+      // 初始化当前对话
+      if (!chatHistory[currentChatId]) {
+        chatHistory[currentChatId] = {
+          messages: [],
+          title: "当前对话",
+          time: new Date().toISOString()
+        };
+      }
+      
+      // 如果当前对话没有角色和模型，显示选择弹窗
+      const currentChat = chatHistory[currentChatId];
+      if (!currentChat.character || !currentChat.model || currentChat.messages.length === 0) {
+        // 延迟显示，确保页面已加载
+        setTimeout(() => {
+          showCharacterModelModal();
+        }, 300);
+      } else {
+        // 恢复角色和模型
+        character = currentChat.character;
+        model = currentChat.model;
+      }
+    }
+    
+    // 保存对话历史（不再使用localStorage，记录已通过API保存到数据库）
+    function saveChatHistory() {
+      // 不再使用localStorage，记录已通过API保存到数据库
+      // 这里保留函数是为了兼容现有代码，但不执行任何操作
+    }
+    
+    // 更新对话标题（使用第一条用户消息）
+    function updateChatTitle(chatId, firstUserMessage) {
+      if (chatHistory[chatId] && firstUserMessage) {
+        const title = firstUserMessage.length > 20 
+          ? firstUserMessage.substring(0, 20) + "..."
+          : firstUserMessage;
+        chatHistory[chatId].title = title;
+        saveChatHistory();
+        updateHistoryList();
+      }
+    }
+    
+    // 添加消息到聊天界面
+    function addMessage(text, isUser, audioBase64 = null, audioDuration = 0, messageId = null, status = 'sent', messageData = null) {
+      // 如果是第一条消息，清空空状态
+      const emptyState = chatMessages.querySelector('.empty-state');
+      if (emptyState) {
+        emptyState.remove();
+      }
+      
+      if (!messageId) {
+        messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      }
+      
+      const messageDiv = document.createElement("div");
+      messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
+      messageDiv.dataset.messageId = messageId;
+      
+      const bubble = document.createElement("div");
+      bubble.className = "message-bubble";
+      
+      const time = document.createElement("div");
+      time.className = "message-time";
+      time.textContent = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      
+      // 添加消息状态（仅用户消息显示）
+      if (isUser) {
+        const statusDiv = document.createElement("div");
+        statusDiv.className = `message-status ${status}`;
+        statusDiv.id = `status-${messageId}`;
+        messageDiv.appendChild(statusDiv);
+      }
+      
+      // 根据响应模式显示不同的内容
+      const responseMode = messageData && messageData.responseMode ? messageData.responseMode : null;
+      
+      if (isUser || !responseMode) {
+        // 用户消息或没有指定响应模式：显示文本
+        bubble.textContent = text;
+      } else if (responseMode === "audio" && !isUser) {
+        // 语音模式：直接使用audio-bubble替换message-bubble，不要外层边框
+        const audioBubble = document.createElement("div");
+        audioBubble.className = "audio-bubble";
+        
+        const icon = document.createElement("span");
+        icon.className = "audio-bubble-icon";
+        icon.textContent = "🔊";
+        
+        const duration = document.createElement("span");
+        duration.className = "audio-bubble-duration";
+        const durationText = audioDuration > 0 
+          ? `${Math.floor(audioDuration)}秒` 
+          : "音频";
+        duration.textContent = durationText;
+        
+        audioBubble.appendChild(icon);
+        audioBubble.appendChild(duration);
+        
+        // 创建隐藏的音频元素用于播放
+        const audio = document.createElement("audio");
+        audio.style.display = "none";
+        if (messageData && messageData.audioUrl) {
+          audio.src = `${FASTAPI_URL}${messageData.audioUrl}`;
+        } else if (messageData && messageData.audioBase64) {
+          audio.src = `data:audio/wav;base64,${messageData.audioBase64}`;
+        } else if (audioUrl) {
+          audio.src = `${FASTAPI_URL}${audioUrl}`;
+        } else if (audioBase64) {
+          audio.src = `data:audio/wav;base64,${audioBase64}`;
+        }
+        
+        // 当音频元数据加载完成后，更新时长显示（如果audioDuration为0或未设置）
+        if (audioDuration <= 0) {
+          audio.addEventListener('loadedmetadata', () => {
+            if (audio.duration && isFinite(audio.duration)) {
+              duration.textContent = `${Math.floor(audio.duration)}秒`;
+            }
+          }, { once: true });
+        }
+        
+        // 点击气泡播放音频
+        audioBubble.addEventListener("click", () => {
+          if (audio.paused) {
+            audio.play().catch(e => {
+              console.error("播放音频失败:", e);
+              showToast("播放音频失败", "error");
+            });
+          } else {
+            audio.pause();
+            audio.currentTime = 0;
+          }
+        });
+        
+        // 播放状态更新图标
+        audio.addEventListener('play', () => {
+          icon.textContent = "🔊";
+        });
+        audio.addEventListener('pause', () => {
+          icon.textContent = "🔊";
+          audio.currentTime = 0;
+        });
+        audio.addEventListener('ended', () => {
+          audio.currentTime = 0;
+        });
+        
+        // 直接替换bubble的内容，使用audio-bubble
+        bubble.innerHTML = "";
+        bubble.className = ""; // 清除message-bubble的样式
+        bubble.appendChild(audioBubble);
+        bubble.appendChild(audio);
+      } else if (responseMode === "video" && !isUser) {
+        // 视频模式：显示视频预览框（不显示文本）
+        if (messageData && messageData.videoTaskId) {
+          // 视频任务ID模式：显示"视频生成中"
+          bubble.textContent = "视频生成中...";
+        } else if (messageData && messageData.videoUrl) {
+          // 构建完整的视频URL（如果是相对路径，需要加上FASTAPI_URL前缀）
+          let videoUrl = messageData.videoUrl;
+          if (videoUrl.startsWith('/')) {
+            // 相对路径，需要加上FASTAPI_URL前缀
+            videoUrl = `${FASTAPI_URL}${videoUrl}`;
+          }
+          
+          const videoPreviewBox = document.createElement("div");
+          videoPreviewBox.className = "video-preview-box";
+          
+          const video = document.createElement("video");
+          const urlWithTimestamp = videoUrl + (videoUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+          video.src = urlWithTimestamp;
+          video.muted = true;
+          video.loop = true;
+          video.playsInline = true;
+          
+          const playIcon = document.createElement("div");
+          playIcon.className = "video-play-icon";
+          playIcon.textContent = "▶";
+          
+          videoPreviewBox.appendChild(video);
+          videoPreviewBox.appendChild(playIcon);
+          
+          // 详细的错误处理
+          video.onerror = async function(e) {
+            console.error("视频加载失败:", {
+              videoUrl: videoUrl,
+              src: video.src,
+              error: e,
+              networkState: video.networkState,
+              readyState: video.readyState
+            });
+            
+            // 尝试检查视频文件是否存在
+            let errorMessage = "视频加载失败";
+            try {
+              const checkResponse = await fetch(videoUrl, { method: 'HEAD' });
+              if (!checkResponse.ok) {
+                if (checkResponse.status === 404) {
+                  errorMessage = `视频文件不存在 (404): ${videoUrl}`;
+                } else {
+                  errorMessage = `视频服务器错误 (${checkResponse.status}): ${videoUrl}`;
+                }
+              } else {
+                const contentType = checkResponse.headers.get('content-type');
+                if (!contentType || !contentType.startsWith('video/')) {
+                  errorMessage = `视频格式错误，Content-Type: ${contentType || '未知'}`;
+                } else {
+                  errorMessage = `视频加载失败，可能格式不支持或文件损坏`;
+                }
+              }
+            } catch (fetchError) {
+              errorMessage = `无法访问视频文件: ${fetchError.message || '网络错误'}`;
+            }
+            
+            console.error("视频加载详细错误:", errorMessage);
+            bubble.textContent = errorMessage;
+            videoPreviewBox.style.display = "none";
+          };
+          
+          // 点击预览框播放视频
+          videoPreviewBox.addEventListener("click", () => {
+            const fullVideo = document.createElement("video");
+            fullVideo.controls = true;
+            fullVideo.style.width = "350px";
+            fullVideo.style.height = "350px";
+            fullVideo.style.borderRadius = "12px";
+            fullVideo.style.objectFit = "cover";
+            const fullUrlWithTimestamp = videoUrl + (videoUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+            fullVideo.src = fullUrlWithTimestamp;
+            fullVideo.muted = false;
+            
+            bubble.innerHTML = "";
+            bubble.appendChild(fullVideo);
+            
+            fullVideo.onerror = async function(e) {
+              console.error("全屏视频播放失败:", {
+                videoUrl: videoUrl,
+                src: fullVideo.src,
+                error: e,
+                networkState: fullVideo.networkState,
+                readyState: fullVideo.readyState
+              });
+              
+              let errorMessage = "视频播放失败";
+              try {
+                const checkResponse = await fetch(videoUrl, { method: 'HEAD' });
+                if (!checkResponse.ok) {
+                  if (checkResponse.status === 404) {
+                    errorMessage = `视频文件不存在 (404)`;
+                  } else {
+                    errorMessage = `视频服务器错误 (${checkResponse.status})`;
+                  }
+                } else {
+                  const contentType = checkResponse.headers.get('content-type');
+                  if (!contentType || !contentType.startsWith('video/')) {
+                    errorMessage = `视频格式错误 (Content-Type: ${contentType || '未知'})`;
+                  } else {
+                    errorMessage = `视频播放失败，可能格式不支持或文件损坏`;
+                  }
+                }
+              } catch (fetchError) {
+                errorMessage = `无法访问视频文件: ${fetchError.message || '网络错误'}`;
+              }
+              
+              console.error("全屏视频播放详细错误:", errorMessage);
+              showToast(errorMessage, "error");
+            };
+            
+            fullVideo.play().catch(e => {
+              console.error("播放视频异常:", e);
+              showToast(`播放失败: ${e.message || '未知错误'}`, "error");
+            });
+          });
+          
+          // 加载视频第一帧作为预览
+          video.addEventListener('loadeddata', () => {
+            video.currentTime = 0.1;
+          }, { once: true });
+          
+          bubble.appendChild(videoPreviewBox);
+        } else {
+          bubble.textContent = text || "视频加载中...";
+        }
+      } else {
+        // 默认：显示文本
+        bubble.textContent = text;
+      }
+      
+      messageDiv.appendChild(bubble);
+      messageDiv.appendChild(time);
+      
+      // 如果是AI回复且有音频（兼容旧逻辑，非响应模式）- 改为使用audio-bubble显示
+      const hasAudio = (audioBase64 || (messageData && messageData.audioUrl)) && !responseMode;
+      if (!isUser && hasAudio) {
+        // 使用audio-bubble显示，和响应模式一致
+        const audioBubble = document.createElement("div");
+        audioBubble.className = "audio-bubble";
+        
+        const icon = document.createElement("span");
+        icon.className = "audio-bubble-icon";
+        icon.textContent = "🔊";
+        
+        const duration = document.createElement("span");
+        duration.className = "audio-bubble-duration";
+        // 如果有audioDuration就显示，否则显示"音频"，等加载后更新
+        const durationText = audioDuration > 0 
+          ? `${Math.floor(audioDuration)}秒` 
+          : "音频";
+        duration.textContent = durationText;
+        
+        audioBubble.appendChild(icon);
+        audioBubble.appendChild(duration);
+        
+        // 创建隐藏的音频元素用于播放
+        const audio = document.createElement("audio");
+        audio.style.display = "none";
+        if (volumeSlider) {
+          audio.volume = isMuted ? 0 : volumeSlider.value / 100;
+        }
+        
+        // 优先使用URL，如果不存在则使用base64
+        if (messageData && messageData.audioUrl) {
+          audio.src = `${FASTAPI_URL}${messageData.audioUrl}`;
+        } else if (messageData && messageData.audioBase64) {
+          audio.src = `data:audio/wav;base64,${messageData.audioBase64}`;
+        } else if (audioUrl) {
+          audio.src = `${FASTAPI_URL}${audioUrl}`;
+        } else if (audioBase64) {
+          audio.src = `data:audio/wav;base64,${audioBase64}`;
+        }
+        
+        // 当音频元数据加载完成后，更新时长显示
+        audio.addEventListener('loadedmetadata', () => {
+          if (audio.duration && isFinite(audio.duration)) {
+            duration.textContent = `${Math.floor(audio.duration)}秒`;
+          }
+        }, { once: true });
+        
+        // 点击气泡播放音频
+        audioBubble.addEventListener("click", () => {
+          if (audio.paused) {
+            audio.play().catch(e => {
+              console.error("播放音频失败:", e);
+              showToast("播放音频失败", "error");
+            });
+          } else {
+            audio.pause();
+            audio.currentTime = 0;
+          }
+        });
+        
+        // 播放状态更新图标
+        audio.addEventListener('play', () => {
+          icon.textContent = "🔊";
+        });
+        audio.addEventListener('pause', () => {
+          icon.textContent = "🔊";
+          audio.currentTime = 0;
+        });
+        audio.addEventListener('ended', () => {
+          audio.currentTime = 0;
+        });
+        
+        // 清除message-bubble样式，添加audio-bubble
+        bubble.className = "";
+        bubble.appendChild(audioBubble);
+        bubble.appendChild(audio);
+        
+        // 保存当前音频引用
+        currentAudio = audio;
+        
+        // 设置初始音量
+        if (volumeSlider) {
+          audio.volume = isMuted ? 0 : volumeSlider.value / 100;
+        }
+        
+        // 自动播放（如果未静音）
+        if (!isMuted) {
+          audio.play().catch(e => console.log("自动播放失败:", e));
+        }
+      }
+      
+      // 如果是AI回复且有视频，添加视频播放按钮
+      const hasVideo = (messageData && messageData.videoUrl) || (messageData && messageData.videoTaskId);
+      if (!isUser && hasVideo) {
+        const videoContainer = document.createElement("div");
+        videoContainer.className = "video-container";
+        videoContainer.id = `video-container-${messageId}`;
+        
+        const videoPlayBtn = document.createElement("button");
+        videoPlayBtn.className = "video-play-btn";
+        videoPlayBtn.textContent = "🎬 播放视频";
+        videoPlayBtn.onclick = () => {
+          // 构建完整的视频URL（如果是相对路径，需要加上FASTAPI_URL前缀）
+          let videoUrl = messageData.videoUrl || `${FASTAPI_URL}/videos/${messageData.videoTaskId}.mp4`;
+          if (videoUrl.startsWith('/')) {
+            // 相对路径，需要加上FASTAPI_URL前缀
+            videoUrl = `${FASTAPI_URL}${videoUrl}`;
+          }
+          
+          const video = document.createElement("video");
+          video.controls = true;
+          video.style.width = "100%";
+          video.style.maxWidth = "500px";
+          video.style.borderRadius = "8px";
+          const urlWithTimestamp = videoUrl + (videoUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+          video.src = urlWithTimestamp;
+          
+          videoContainer.innerHTML = "";
+          videoContainer.appendChild(video);
+          videoContainer.classList.add("active");
+          videoPlayBtn.style.display = "none";
+          
+          video.onerror = async function() {
+            console.error("视频加载失败:", {
+              videoUrl: videoUrl,
+              src: video.src,
+              networkState: video.networkState,
+              readyState: video.readyState
+            });
+            
+            // 尝试检查视频文件是否存在
+            let errorMessage = "视频加载失败";
+            try {
+              const checkResponse = await fetch(videoUrl, { method: 'HEAD' });
+              if (!checkResponse.ok) {
+                if (checkResponse.status === 404) {
+                  errorMessage = `视频文件不存在 (404): ${videoUrl}`;
+                } else {
+                  errorMessage = `视频服务器错误 (${checkResponse.status}): ${videoUrl}`;
+                }
+              } else {
+                const contentType = checkResponse.headers.get('content-type');
+                if (!contentType || !contentType.startsWith('video/')) {
+                  errorMessage = `视频格式错误，Content-Type: ${contentType || '未知'}`;
+                } else {
+                  errorMessage = `视频加载失败，可能格式不支持或文件损坏`;
+                }
+              }
+            } catch (fetchError) {
+              errorMessage = `无法访问视频文件: ${fetchError.message || '网络错误'}`;
+            }
+            
+            console.error("视频加载详细错误:", errorMessage);
+            showToast(errorMessage, "error");
+            videoContainer.innerHTML = "";
+            videoContainer.classList.remove("active");
+            videoPlayBtn.style.display = "block";
+          };
+        };
+        
+        videoContainer.appendChild(videoPlayBtn);
+        bubble.appendChild(videoContainer);
+      }
+      
+      chatMessages.appendChild(messageDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      
+      // 保存到对话历史（延迟保存，避免在流式输出时频繁保存）
+      if (chatHistory[currentChatId] && !isStreaming) {
+        const existingMessage = chatHistory[currentChatId].messages.find(m => m.messageId === messageId);
+        if (!existingMessage) {
+          chatHistory[currentChatId].messages.push({
+            text,
+            isUser,
+            audioBase64,
+            audioDuration,
+            messageId,
+            status,
+            time: new Date().toISOString()
+          });
+          saveChatHistory();
+        }
+      }
+      
+      return messageDiv;
+    }
+    
+    // 更新消息状态
+    function updateMessageStatus(messageId, status) {
+      const statusDiv = document.getElementById(`status-${messageId}`);
+      if (statusDiv) {
+        statusDiv.className = `message-status ${status}`;
+      }
+      
+      // 更新历史记录中的状态
+      if (chatHistory[currentChatId]) {
+        const message = chatHistory[currentChatId].messages.find(m => m.messageId === messageId);
+        if (message) {
+          message.status = status;
+          saveChatHistory();
+        }
+      }
+    }
+    
+    // 更新消息内容（用于流式输出）
+    function updateMessageText(messageId, text, isComplete = false) {
+      const messageDiv = document.querySelector(`[data-message-id="${messageId}"]`);
+      if (messageDiv) {
+        const bubble = messageDiv.querySelector('.message-bubble');
+        if (bubble) {
+          if (isComplete) {
+            bubble.textContent = text;
+            // 移除流式光标
+            const cursor = bubble.querySelector('.streaming-cursor');
+            if (cursor) {
+              cursor.remove();
+            }
+          } else {
+            bubble.innerHTML = `<span class="streaming-text">${text}</span><span class="streaming-cursor"></span>`;
+          }
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+      }
+      
+      // 更新历史记录
+      if (chatHistory[currentChatId]) {
+        const message = chatHistory[currentChatId].messages.find(m => m.messageId === messageId);
+        if (message) {
+          message.text = text;
+          saveChatHistory();
+        }
+      }
+    }
+    
+    // 显示输入指示器（带取消按钮）
+    function showTypingIndicator() {
+      const indicator = document.createElement("div");
+      indicator.className = "message assistant";
+      indicator.id = "typingIndicator";
+      
+      const wrapper = document.createElement("div");
+      wrapper.className = "typing-indicator-wrapper";
+      
+      const typingDiv = document.createElement("div");
+      typingDiv.className = "typing-indicator";
+      typingDiv.innerHTML = `
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+      `;
+      
+      const cancelBtn = document.createElement("button");
+      cancelBtn.className = "cancel-typing-btn";
+      cancelBtn.textContent = "×";
+      cancelBtn.title = "取消回复";
+      cancelBtn.onclick = () => {
+        if (abortController) {
+          abortController.abort();
+        }
+        hideTypingIndicator();
+      };
+      
+      wrapper.appendChild(typingDiv);
+      wrapper.appendChild(cancelBtn);
+      indicator.appendChild(wrapper);
+      chatMessages.appendChild(indicator);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    // 隐藏输入指示器
+    function hideTypingIndicator() {
+      const indicator = document.getElementById("typingIndicator");
+      if (indicator) {
+        indicator.remove();
+      }
+    }
+    
+    // 获取当前选择的响应模式
+    function getResponseMode() {
+      const textRadio = document.getElementById("modeText");
+      const audioRadio = document.getElementById("modeAudio");
+      const videoRadio = document.getElementById("modeVideo");
+      
+      if (videoRadio && videoRadio.checked) {
+        return "video";
+      } else if (audioRadio && audioRadio.checked) {
+        return "audio";
+      } else {
+        return "text";
+      }
+    }
+    
+    // 更新进度显示
+    function updateProgress(step, progress, resetStage = false) {
+      const progressContainer = document.getElementById('chatProgressContainer');
+      const progressFill = document.getElementById('chatProgressFill');
+      const progressText = document.getElementById('chatProgressText');
+      const progressPercent = document.getElementById('chatProgressPercent');
+      
+      if (!progressContainer || !progressFill || !progressText || !progressPercent) {
+        return;
+      }
+      
+      // 显示进度容器
+      if (progressContainer.style.display === 'none') {
+        progressContainer.style.display = 'block';
+      }
+      
+      // 更新进度条
+      progressFill.style.width = progress + '%';
+      progressPercent.textContent = Math.round(progress) + '%';
+      
+      // 更新进度文本
+      const stageNames = {
+        'llm': 'LLM 文本生成',
+        'tts': 'TTS 音频生成',
+        'nerf': 'NeRF 视频生成',
+        'video': 'NeRF 视频生成'  // 兼容video名称
+      };
+      const stageName = stageNames[step] || '处理中';
+      
+      if (resetStage) {
+        progressText.textContent = '准备中...';
+      } else {
+        progressText.textContent = `${stageName}中...`;
+      }
+    }
+    
+    // 从日志中检测当前阶段和完成状态
+    function detectStageFromLogs(logs) {
+      if (!logs || !Array.isArray(logs)) {
+        return { stage: null, stageCompleted: false };
+      }
+      
+      let llmCompleted = false;
+      let ttsCompleted = false;
+      let videoCompleted = false;
+      let currentStage = null;
+      
+      // 从最新的日志开始查找（倒序）
+      for (let i = logs.length - 1; i >= 0; i--) {
+        const log = logs[i];
+        const message = log.message || '';
+        
+        // 检查阶段完成标记
+        if (message.includes('阶段1完成') && message.includes('LLM')) {
+          llmCompleted = true;
+          if (!currentStage) currentStage = 'tts';
+        } else if (message.includes('阶段2完成') && message.includes('TTS')) {
+          ttsCompleted = true;
+          if (!currentStage) currentStage = 'video';
+        } else if (message.includes('阶段3完成') || message.includes('视频生成任务提交完成')) {
+          videoCompleted = true;
+          if (!currentStage) currentStage = 'video';
+        }
+        
+        // 检查当前阶段标记（如果没有完成标记）
+        if (!currentStage) {
+          if (message.includes('阶段1') && message.includes('LLM')) {
+            currentStage = 'llm';
+          } else if (message.includes('阶段2') && message.includes('TTS')) {
+            currentStage = 'tts';
+          } else if (message.includes('阶段3') && (message.includes('视频') || message.includes('NeRF'))) {
+            currentStage = 'video';
+          }
+        }
+      }
+      
+      return { 
+        stage: currentStage, 
+        llmCompleted, 
+        ttsCompleted, 
+        videoCompleted 
+      };
+    }
+    
+    // 开始日志轮询
+    function startLogPolling() {
+      // 清除之前的轮询
+      stopLogPolling();
+      
+      // 重置阶段状态
+      currentStage = null;
+      stageStartTime = null;
+      
+      // 显示进度容器并初始化
+      updateProgress('llm', 0, true);
+      
+      // 开始轮询日志
+      logPollInterval = setInterval(async () => {
+        try {
+          const response = await fetch(`${FASTAPI_URL}/logs/full?debug=false`);
+          if (!response.ok) {
+            return;
+          }
+          
+          const data = await response.json();
+          if (data.success && data.logs) {
+            // 检测当前阶段和完成状态
+            const stageInfo = detectStageFromLogs(data.logs);
+            
+            if (stageInfo.stage && stageInfo.stage !== currentStage) {
+              // 阶段变化
+              currentStage = stageInfo.stage;
+              stageStartTime = Date.now();
+            }
+            
+            // 根据阶段完成状态和当前阶段计算进度
+            let progress = 0;
+            let activeStep = 'llm';
+            
+            if (stageInfo.llmCompleted) {
+              progress = 33;
+              activeStep = 'tts';
+              
+              if (stageInfo.ttsCompleted) {
+                progress = 66;
+                activeStep = 'video';
+                
+                if (stageInfo.videoCompleted) {
+                  progress = 100;
+                } else if (currentStage === 'video') {
+                  // 视频阶段进行中：66-100%
+                  const elapsed = stageStartTime ? (Date.now() - stageStartTime) / 1000 : 0;
+                  progress = 66 + Math.min(34, Math.floor(elapsed / 60 * 34)); // 假设60秒内完成
+                }
+              } else if (currentStage === 'tts') {
+                // TTS阶段进行中：33-66%
+                const elapsed = stageStartTime ? (Date.now() - stageStartTime) / 1000 : 0;
+                progress = 33 + Math.min(33, Math.floor(elapsed / 15 * 33)); // 假设15秒内完成
+              }
+            } else if (currentStage === 'llm') {
+              // LLM阶段进行中：0-33%
+              const elapsed = stageStartTime ? (Date.now() - stageStartTime) / 1000 : 0;
+              progress = Math.min(33, Math.floor(elapsed / 10 * 33)); // 假设10秒内完成
+            } else {
+              // 如果还没检测到阶段，显示较小的初始进度
+              progress = 5;
+            }
+            
+            updateProgress(activeStep, progress);
+          }
+        } catch (error) {
+          console.error('日志轮询失败:', error);
+        }
+      }, 1000); // 每秒轮询一次
+    }
+    
+    // 停止日志轮询
+    function stopLogPolling() {
+      if (logPollInterval) {
+        clearInterval(logPollInterval);
+        logPollInterval = null;
+      }
+      
+      // 隐藏进度容器
+      const progressContainer = document.getElementById('chatProgressContainer');
+      if (progressContainer) {
+        progressContainer.style.display = 'none';
+      }
+      
+      // 重置阶段状态
+      currentStage = null;
+      stageStartTime = null;
+    }
+    
+    // 简单的toast提示函数
+    function showToast(message, type = 'info') {
+      // 创建一个简单的toast元素
+      const toast = document.createElement('div');
+      toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 12px 24px;
+        background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : type === 'warning' ? '#f59e0b' : '#3b82f6'};
+        color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        font-size: 14px;
+        font-weight: 500;
+      `;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      
+      // 3秒后自动移除
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(() => {
+          document.body.removeChild(toast);
+        }, 300);
+      }, 3000);
+    }
+    
+    // 发送消息
+    async function sendMessage(text, retryMessageId = null) {
+      if (!text.trim()) return;
+      
+      // 如果正在等待音频返回或视频生成，禁止发送新消息
+      if (isWaitingForAudio || isWaitingForVideo || isStreaming) {
+        showToast("请等待AI回复完成后再发送", "warning");
+        return;
+      }
+      
+      // 检查是否有角色和模型
+      if (!character || !model) {
+        showToast("请先选择角色和模型", "error");
+        showCharacterModelModal();
+        return;
+      }
+      
+      const userMessageId = retryMessageId || `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const responseMode = getResponseMode(); // 获取选择的响应模式
+      
+      // 根据响应模式设置enable_audio和enable_video
+      const enable_audio = responseMode === "audio";
+      const enable_video = responseMode === "video";
+      
+      // 添加用户消息（如果是重试，不重复添加）
+      if (!retryMessageId) {
+        addMessage(text, true, null, 0, userMessageId, 'sending');
+        updateChatTitle(currentChatId, text);
+        chatInput.value = "";
+      } else {
+        // 重试时更新状态
+        updateMessageStatus(userMessageId, 'sending');
+      }
+      
+      // 显示输入指示器
+      showTypingIndicator();
+      
+      // 禁用发送按钮（不再修改文本）
+      sendBtn.disabled = true;
+      
+      // 启动日志轮询以显示进度
+      startLogPolling();
+      
+      // 创建AbortController用于取消请求
+      // 视频模式需要更长的超时时间（15分钟），因为视频生成可能需要很长时间
+      const timeoutDuration = responseMode === "video" ? 900000 : 300000; // 视频模式15分钟，其他5分钟
+      abortController = new AbortController();
+      const timeoutId = setTimeout(() => {
+        abortController.abort();
+      }, timeoutDuration);
+      
+      try {
+        const response = await fetch(`${FASTAPI_URL}/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: text,
+            character: character,
+            enable_audio: enable_audio,
+            enable_video: enable_video,  // 新增参数
+            response_mode: responseMode,  // 新增参数，方便后端识别
+            session_id: currentSessionId  // 使用当前会话ID
+          }),
+          signal: abortController.signal  // 支持取消请求
+        });
+        
+        clearTimeout(timeoutId);  // 清除超时定时器
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        hideTypingIndicator();
+        
+        // 更新用户消息状态为已送达
+        updateMessageStatus(userMessageId, 'sent');
+        
+        // 更新会话ID（如果API返回了新的会话ID）
+        if (data.data && data.data.session_id) {
+          currentSessionId = data.data.session_id;
+          // 如果当前对话还没有sessionId，更新它
+          if (chatHistory[currentChatId] && !chatHistory[currentChatId].sessionId) {
+            chatHistory[currentChatId].sessionId = currentSessionId;
+          }
+        }
+        
+        if (data.success) {
+          const answer = data.data.llm_answer || "";
+          const audioBase64 = data.data.audio_base64 || null;
+          const audioUrl = data.data.audio_url || null;  // 如果音频已保存为文件
+          const audioDuration = data.data.audio_duration || 0;
+          const videoUrl = data.data.video_url || null;  // 视频URL（如果后端直接返回）
+          const videoTaskId = data.data.video_task_id || null;  // 视频任务ID（如果异步生成）
+          const assistantMessageId = data.data.assistant_message_id || `assistant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          
+          // 根据响应模式处理不同的显示逻辑
+          // 对于非视频模式，停止日志轮询（LLM和TTS已完成）
+          if (responseMode !== "video") {
+            stopLogPolling();
+          }
+          // 对于视频模式，继续日志轮询直到视频生成完成
+          
+          if (responseMode === "text") {
+            // 文本模式：只显示文本
+            if (!answer || answer.length === 0) {
+              addMessage("AI回复为空", false, null, 0, assistantMessageId, 'sent');
+              sendBtn.disabled = false;
+            } else {
+              streamingMessageId = assistantMessageId;
+              isStreaming = true;
+          
+          // 先创建空消息
+              addMessage("", false, null, 0, assistantMessageId, 'sent', {
+                responseMode: "text"
+              });
+              
+              // 逐字显示文本
+              let currentText = "";
+              for (let i = 0; i < answer.length; i++) {
+                if (!isStreaming) break;
+                currentText += answer[i];
+                updateMessageText(assistantMessageId, currentText, false);
+                await new Promise(resolve => setTimeout(resolve, 30));
+              }
+              
+              updateMessageText(assistantMessageId, answer, true);
+              isStreaming = false;
+              streamingMessageId = null;
+              sendBtn.disabled = false;
+            }
+            
+            // 保存消息到历史记录
+            if (chatHistory[currentChatId]) {
+              const existingMessage = chatHistory[currentChatId].messages.find(m => m.messageId === assistantMessageId);
+              if (!existingMessage) {
+                chatHistory[currentChatId].messages.push({
+                  text: answer,
+                  isUser: false,
+                  messageId: assistantMessageId,
+                  status: 'sent',
+                  time: new Date().toISOString(),
+                  responseMode: "text"
+                });
+              }
+            }
+          } else if (responseMode === "audio" && (audioBase64 || audioUrl)) {
+            // 语音模式：显示语音气泡（显示秒数），不显示文本，点击播放
+            addMessage("", false, null, audioDuration, assistantMessageId, 'sent', {
+              responseMode: "audio",
+              audioBase64: audioBase64,
+              audioUrl: audioUrl,
+              audioDuration: audioDuration
+            });
+            
+            // 创建语音气泡显示
+            const messageDiv = document.querySelector(`[data-message-id="${assistantMessageId}"]`);
+            if (messageDiv) {
+              const bubble = messageDiv.querySelector('.message-bubble');
+              if (bubble) {
+                const audioBubble = document.createElement("div");
+                audioBubble.className = "audio-bubble";
+                
+                const icon = document.createElement("span");
+                icon.className = "audio-bubble-icon";
+                icon.textContent = "🔊";
+                
+                const duration = document.createElement("span");
+                duration.className = "audio-bubble-duration";
+                const durationText = audioDuration > 0 
+                  ? `${Math.floor(audioDuration)}秒` 
+                  : "音频";
+                duration.textContent = durationText;
+                
+                audioBubble.appendChild(icon);
+                audioBubble.appendChild(duration);
+                
+                // 创建隐藏的音频元素用于播放
+                const audio = document.createElement("audio");
+                audio.style.display = "none";
+                if (audioUrl) {
+                  audio.src = `${FASTAPI_URL}${audioUrl}`;
+                } else if (audioBase64) {
+                audio.src = `data:audio/wav;base64,${audioBase64}`;
+                }
+                
+                // 当音频元数据加载完成后，更新时长显示（如果audioDuration为0或未设置）
+                if (audioDuration <= 0) {
+                  audio.addEventListener('loadedmetadata', () => {
+                    if (audio.duration && isFinite(audio.duration)) {
+                      duration.textContent = `${Math.floor(audio.duration)}秒`;
+                    }
+                  }, { once: true });
+                }
+                
+                // 点击气泡播放音频
+                audioBubble.addEventListener("click", () => {
+                  if (audio.paused) {
+                    audio.play().catch(e => {
+                      console.error("播放音频失败:", e);
+                      showToast("播放音频失败", "error");
+                    });
+                  } else {
+                    audio.pause();
+                    audio.currentTime = 0;
+                  }
+                });
+                
+                // 播放状态更新图标
+                audio.addEventListener('play', () => {
+                  icon.textContent = "🔊";
+                });
+                audio.addEventListener('pause', () => {
+                  icon.textContent = "🔊";
+                  audio.currentTime = 0;
+                });
+                audio.addEventListener('ended', () => {
+                  audio.currentTime = 0;
+                });
+                
+                // 直接替换bubble的内容，使用audio-bubble，清除message-bubble样式
+                bubble.innerHTML = "";
+                bubble.className = ""; // 清除message-bubble的样式
+                bubble.appendChild(audioBubble);
+                bubble.appendChild(audio);
+                    
+                // 保存消息到历史记录
+                if (chatHistory[currentChatId]) {
+                  const existingMessage = chatHistory[currentChatId].messages.find(m => m.messageId === assistantMessageId);
+                  if (!existingMessage) {
+                    chatHistory[currentChatId].messages.push({
+                      text: "", // 语音模式不保存文本
+                      isUser: false,
+                      messageId: assistantMessageId,
+                      status: 'sent',
+                      time: new Date().toISOString(),
+                      responseMode: "audio",
+                      audioBase64: audioBase64,
+                      audioUrl: audioUrl,
+                      audioDuration: audioDuration
+                    });
+                  }
+                }
+              }
+            }
+            sendBtn.disabled = false;
+          } else if (responseMode === "video") {
+            // 视频模式：按照generate.html的方式，直接调用 /generate_video API
+            isWaitingForVideo = true;
+            
+            // 先显示"视频生成中"的占位符
+            addMessage("", false, null, 0, assistantMessageId, 'sent', {
+              responseMode: "video"
+            });
+            
+            const messageDiv = document.querySelector(`[data-message-id="${assistantMessageId}"]`);
+            if (messageDiv) {
+              const bubble = messageDiv.querySelector('.message-bubble');
+              if (bubble) {
+                bubble.textContent = "视频生成中...";
+              }
+            }
+            
+            // 直接调用 /generate_video API（就像generate.html那样）
+            // 注意：来自聊天，传递is_from_chat=true，这样视频不会保存到video_records数据库
+            try {
+              const videoResult = await generateVideo({
+                text: answer,  // 使用LLM生成的回答作为输入
+                character: character,
+                model_name: model,  // 使用模型名（和generate.html完全一致）
+                is_from_chat: true  // 标记为来自聊天，不保存到video_records数据库
+              });
+              
+              if (!videoResult.success) {
+                throw new Error(videoResult.error || '视频任务提交失败');
+              }
+              
+              const videoTaskId = videoResult.unique_id;
+                    
+              // 更新消息，添加videoTaskId
+              if (messageDiv) {
+                const bubble = messageDiv.querySelector('.message-bubble');
+                if (bubble) {
+                  const messageData = chatHistory[currentChatId]?.messages?.find(m => m.messageId === assistantMessageId);
+                  if (messageData) {
+                    messageData.videoTaskId = videoTaskId;
+                  }
+                }
+                    }
+                    
+              // 开始轮询视频生成状态（完全按照generate.html的逻辑）
+              let pollCount = 0;
+              let lastProgress = 0;
+              let consecutiveFailures = 0;
+              const startTime = Date.now();
+              const MAX_RUNTIME_SECONDS = 1800;
+              
+              const checkVideoStatus = async () => {
+                try {
+                  pollCount++;
+                  const elapsedSeconds = (Date.now() - startTime) / 1000;
+                  
+                  if (elapsedSeconds > MAX_RUNTIME_SECONDS) {
+                    stopLogPolling();
+                    isWaitingForVideo = false;
+                      sendBtn.disabled = false;
+                    const messageDiv = document.querySelector(`[data-message-id="${assistantMessageId}"]`);
+                    if (messageDiv) {
+                      const bubble = messageDiv.querySelector('.message-bubble');
+                      if (bubble) {
+                        bubble.textContent = "视频生成超时";
+                      }
+                    }
+                    showToast('视频生成时间过长，已停止监控', 'warning');
+                    return;
+                  }
+                  
+                  const statusResult = await getVideoGenerationStatus(videoTaskId);
+                  
+                  if (!statusResult.success) {
+                    consecutiveFailures++;
+                    if (consecutiveFailures >= 5) {
+                      stopLogPolling();
+                      isWaitingForVideo = false;
+                      sendBtn.disabled = false;
+                      showToast("视频状态查询失败，已停止监控", "error");
+                      return;
+                    }
+                    setTimeout(checkVideoStatus, 2000);
+                    return;
+                  }
+                  
+                  if (!statusResult.data) {
+                    consecutiveFailures++;
+                    if (consecutiveFailures >= 5) {
+                      stopLogPolling();
+                      isWaitingForVideo = false;
+                      sendBtn.disabled = false;
+                      showToast("视频任务不存在，已停止监控", "error");
+                      return;
+                    }
+                    setTimeout(checkVideoStatus, 2000);
+                    return;
+                  }
+                  
+                  consecutiveFailures = 0;
+                  const task = statusResult.data;
+                  const status = task.status;
+                  
+                  // 更新进度（完全按照generate.html的逻辑）
+                  if (status === 'pending') {
+                    updateProgress('video', 10, false);
+                  } else if (status === 'running') {
+                    let progress = 30;
+                    if (elapsedSeconds <= 30) {
+                      progress = 30 + Math.floor((elapsedSeconds / 30) * 10);
+                    } else if (elapsedSeconds <= 90) {
+                      progress = 40 + Math.floor(((elapsedSeconds - 30) / 60) * 10);
+                    } else if (elapsedSeconds <= 150) {
+                      progress = 50 + Math.floor(((elapsedSeconds - 90) / 60) * 10);
+                    } else if (elapsedSeconds <= 210) {
+                      progress = 60 + Math.floor(((elapsedSeconds - 150) / 60) * 10);
+                    } else if (elapsedSeconds <= 270) {
+                      progress = 70 + Math.floor(((elapsedSeconds - 210) / 60) * 10);
+                    } else {
+                      progress = Math.min(80 + Math.floor(((elapsedSeconds - 270) / 60) * 10), 90);
+                    }
+                    
+                    if (progress < lastProgress) {
+                      progress = lastProgress;
+                    } else if (progress === lastProgress && elapsedSeconds > 60) {
+                      progress = Math.min(lastProgress + 0.5, 90);
+                    }
+                    
+                    lastProgress = progress;
+                    updateProgress('video', progress, false);
+                    setTimeout(checkVideoStatus, 2000);
+                  } else if (status === 'completed') {
+                                  // 视频生成完成
+                    updateProgress('video', 100, false);
+                    stopLogPolling();
+                                  
+                    // 从任务数据中获取video_path（文件系统路径）
+                    const videoPath = task.video_path;  // 这是文件系统路径，如 /path/to/videos/task_id.mp4
+                    const finalVideoUrl = `${FASTAPI_URL}/videos/${videoTaskId}.mp4`;
+                    
+                    // 如果video_path存在，更新chat_messages表的video_path
+                    if (videoPath && typeof updateMessageVideoPath === 'function') {
+                      try {
+                        const updateResult = await updateMessageVideoPath(assistantMessageId, videoPath);
+                        if (updateResult.success) {
+                          console.log('[聊天] 视频路径已更新到数据库:', videoPath);
+                        } else {
+                          console.warn('[聊天] 更新视频路径失败:', updateResult.error);
+                        }
+                      } catch (error) {
+                        console.error('[聊天] 更新视频路径异常:', error);
+                      }
+                    }
+                    
+                    // 更新消息，显示视频预览框
+                                  const messageDiv = document.querySelector(`[data-message-id="${assistantMessageId}"]`);
+                                  if (messageDiv) {
+                                    const bubble = messageDiv.querySelector('.message-bubble');
+                                    if (bubble) {
+                        const videoPreviewBox = document.createElement("div");
+                        videoPreviewBox.className = "video-preview-box";
+                                      
+                                        const video = document.createElement("video");
+                        const urlWithTimestamp = finalVideoUrl + (finalVideoUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+                        video.src = urlWithTimestamp;
+                        video.muted = true;
+                        video.loop = true;
+                        video.playsInline = true;
+                        
+                        // 详细的错误处理
+                        video.onerror = async function(e) {
+                          console.error("视频加载失败:", {
+                            videoUrl: finalVideoUrl,
+                            src: video.src,
+                            error: e,
+                            networkState: video.networkState,
+                            readyState: video.readyState
+                          });
+                          
+                          // 尝试检查视频文件是否存在
+                          let errorMessage = "视频加载失败";
+                          try {
+                            const checkResponse = await fetch(finalVideoUrl, { method: 'HEAD' });
+                            if (!checkResponse.ok) {
+                              if (checkResponse.status === 404) {
+                                errorMessage = `视频文件不存在 (404): ${finalVideoUrl}`;
+                              } else {
+                                errorMessage = `视频服务器错误 (${checkResponse.status}): ${finalVideoUrl}`;
+                              }
+                            } else {
+                              const contentType = checkResponse.headers.get('content-type');
+                              if (!contentType || !contentType.startsWith('video/')) {
+                                errorMessage = `视频格式错误，Content-Type: ${contentType || '未知'}`;
+                              } else {
+                                errorMessage = `视频加载失败，可能格式不支持或文件损坏`;
+                              }
+                            }
+                          } catch (fetchError) {
+                            errorMessage = `无法访问视频文件: ${fetchError.message || '网络错误'}`;
+                          }
+                          
+                          console.error("视频加载详细错误:", errorMessage);
+                          bubble.textContent = errorMessage;
+                          videoPreviewBox.style.display = "none";
+                        };
+                        
+                        const playIcon = document.createElement("div");
+                        playIcon.className = "video-play-icon";
+                        playIcon.textContent = "▶";
+                        
+                        videoPreviewBox.appendChild(video);
+                        videoPreviewBox.appendChild(playIcon);
+                        
+                        videoPreviewBox.addEventListener("click", () => {
+                          const fullVideo = document.createElement("video");
+                          fullVideo.controls = true;
+                          fullVideo.style.width = "350px";
+                          fullVideo.style.height = "350px";
+                          fullVideo.style.borderRadius = "12px";
+                          fullVideo.style.objectFit = "cover";
+                          const fullUrlWithTimestamp = finalVideoUrl + (finalVideoUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+                          fullVideo.src = fullUrlWithTimestamp;
+                          fullVideo.muted = false;
+                          
+                          bubble.innerHTML = "";
+                          bubble.appendChild(fullVideo);
+                          
+                          fullVideo.onerror = async function(e) {
+                            console.error("全屏视频播放失败:", {
+                              videoUrl: finalVideoUrl,
+                              src: fullVideo.src,
+                              error: e,
+                              networkState: fullVideo.networkState,
+                              readyState: fullVideo.readyState
+                            });
+                            
+                            let errorMessage = "视频播放失败";
+                            try {
+                              const checkResponse = await fetch(finalVideoUrl, { method: 'HEAD' });
+                              if (!checkResponse.ok) {
+                                if (checkResponse.status === 404) {
+                                  errorMessage = `视频文件不存在 (404)`;
+                                } else {
+                                  errorMessage = `视频服务器错误 (${checkResponse.status})`;
+                                }
+                              } else {
+                                const contentType = checkResponse.headers.get('content-type');
+                                if (!contentType || !contentType.startsWith('video/')) {
+                                  errorMessage = `视频格式错误 (Content-Type: ${contentType || '未知'})`;
+                                } else {
+                                  errorMessage = `视频播放失败，可能格式不支持或文件损坏`;
+                                }
+                              }
+                            } catch (fetchError) {
+                              errorMessage = `无法访问视频文件: ${fetchError.message || '网络错误'}`;
+                            }
+                            
+                            console.error("全屏视频播放详细错误:", errorMessage);
+                            showToast(errorMessage, "error");
+                          };
+                          
+                          fullVideo.play().catch(e => {
+                            console.error("播放视频异常:", e);
+                            showToast(`播放失败: ${e.message || '未知错误'}`, "error");
+                          });
+                        });
+                        
+                        video.addEventListener('loadeddata', () => {
+                          video.currentTime = 0.1;
+                        }, { once: true });
+                        
+                        bubble.innerHTML = "";
+                        bubble.appendChild(videoPreviewBox);
+                      }
+                    }
+                                      
+                                      // 更新历史记录
+                                      if (chatHistory[currentChatId]) {
+                                        const message = chatHistory[currentChatId].messages.find(m => m.messageId === assistantMessageId);
+                                        if (message) {
+                        message.videoUrl = finalVideoUrl;
+                                          message.videoTaskId = videoTaskId;
+                                    }
+                                  }
+                                  
+                                  isWaitingForVideo = false;
+                                  sendBtn.disabled = false;
+                    showToast('视频生成成功！', 'success');
+                  } else if (status === 'failed' || status === 'cancelled') {
+                    stopLogPolling();
+                                  isWaitingForVideo = false;
+                                  sendBtn.disabled = false;
+                    const error = task.error || (status === 'cancelled' ? '任务已取消' : '未知错误');
+                    const messageDiv = document.querySelector(`[data-message-id="${assistantMessageId}"]`);
+                    if (messageDiv) {
+                      const bubble = messageDiv.querySelector('.message-bubble');
+                      if (bubble) {
+                        bubble.textContent = `视频生成失败: ${error}`;
+                                }
+                    }
+                    showToast(status === 'cancelled' ? '任务已取消' : ('生成失败: ' + error), 'error');
+                              } else {
+                    setTimeout(checkVideoStatus, 2000);
+                              }
+                            } catch (error) {
+                              console.error("查询视频状态失败:", error);
+                  consecutiveFailures++;
+                  if (consecutiveFailures >= 5) {
+                    stopLogPolling();
+                              isWaitingForVideo = false;
+                              sendBtn.disabled = false;
+                    showToast("查询视频状态失败，已停止监控", "error");
+                  } else {
+                    setTimeout(checkVideoStatus, 2000);
+                  }
+                            }
+                          };
+                          
+                          // 开始轮询
+                          setTimeout(checkVideoStatus, 2000);
+                      } catch (error) {
+              console.error("视频任务提交失败:", error);
+              stopLogPolling();
+                        isWaitingForVideo = false;
+                        sendBtn.disabled = false;
+              const messageDiv = document.querySelector(`[data-message-id="${assistantMessageId}"]`);
+              if (messageDiv) {
+                const bubble = messageDiv.querySelector('.message-bubble');
+                if (bubble) {
+                  bubble.textContent = `视频任务提交失败: ${error.message || error}`;
+                }
+              }
+              showToast("视频任务提交失败: " + (error.message || error), "error");
+                  }
+          }
+          
+          // 保存消息到历史记录（数据库已自动保存，这里不需要额外操作）
+          saveChatHistory();
+          } else {
+          // 错误处理（兼容旧逻辑，用于非responseMode的情况）
+          // 这部分代码保留用于向后兼容
+          if (false) { // 这个分支暂时不使用
+              addMessage("", false, null, 0, assistantMessageId, 'sent', {
+                responseMode: "video",
+                videoUrl: videoUrl
+              });
+            
+              // 创建视频预览框
+              const messageDiv = document.querySelector(`[data-message-id="${assistantMessageId}"]`);
+              if (messageDiv) {
+                const bubble = messageDiv.querySelector('.message-bubble');
+                if (bubble) {
+                  const videoPreviewBox = document.createElement("div");
+                  videoPreviewBox.className = "video-preview-box";
+                  
+                  const video = document.createElement("video");
+                  video.src = videoUrl + '?t=' + Date.now();
+                  video.muted = true; // 预览时静音
+                  video.loop = true;
+                  video.playsInline = true;
+                  
+                  const playIcon = document.createElement("div");
+                  playIcon.className = "video-play-icon";
+                  playIcon.textContent = "▶";
+                  
+                  videoPreviewBox.appendChild(video);
+                  videoPreviewBox.appendChild(playIcon);
+                  
+                  // 点击预览框播放视频
+                  videoPreviewBox.addEventListener("click", () => {
+                    const fullVideo = document.createElement("video");
+                    fullVideo.controls = true;
+                    fullVideo.style.width = "350px";
+                    fullVideo.style.height = "350px";
+                    fullVideo.style.borderRadius = "12px";
+                    fullVideo.style.objectFit = "cover";
+                    fullVideo.src = videoUrl + '?t=' + Date.now();
+                    fullVideo.muted = false;
+                    
+                    bubble.innerHTML = "";
+                    bubble.appendChild(fullVideo);
+                    
+                    fullVideo.play().catch(e => {
+                      console.error("播放视频失败:", e);
+                      showToast("播放视频失败", "error");
+                    });
+                  });
+            
+                  // 加载视频第一帧作为预览
+                  video.addEventListener('loadeddata', () => {
+                    video.currentTime = 0.1;
+                  }, { once: true });
+                  
+                  bubble.innerHTML = "";
+                  bubble.appendChild(videoPreviewBox);
+          
+          // 保存消息到历史记录
+          if (chatHistory[currentChatId]) {
+            const existingMessage = chatHistory[currentChatId].messages.find(m => m.messageId === assistantMessageId);
+            if (!existingMessage) {
+              chatHistory[currentChatId].messages.push({
+                        text: "", // 视频模式不保存文本
+                isUser: false,
+                messageId: assistantMessageId,
+                status: 'sent',
+                        time: new Date().toISOString(),
+                        responseMode: "video",
+                        videoUrl: videoUrl
+              });
+            }
+          }
+                }
+              }
+              sendBtn.disabled = false;
+            } else if (videoTaskId) {
+              // 如果后端返回了视频任务ID，需要轮询视频生成状态
+              isWaitingForVideo = true;
+              
+              // 先显示"视频生成中"的占位符
+              addMessage("", false, null, 0, assistantMessageId, 'sent', {
+                responseMode: "video",
+                videoTaskId: videoTaskId
+              });
+              
+              const messageDiv = document.querySelector(`[data-message-id="${assistantMessageId}"]`);
+              if (messageDiv) {
+                const bubble = messageDiv.querySelector('.message-bubble');
+                if (bubble) {
+                  bubble.textContent = "视频生成中...";
+                }
+              }
+              
+              // 轮询视频生成状态
+              const checkVideoStatus = async () => {
+                try {
+                  const statusResult = await getVideoGenerationStatus(videoTaskId);
+                  
+                  if (statusResult.success) {
+                    const status = statusResult.data.status;
+                    
+                    if (status === 'completed') {
+                      const finalVideoUrl = `${FASTAPI_URL}/videos/${videoTaskId}.mp4`;
+                      
+                      // 更新消息，显示视频预览框
+                      const messageDiv = document.querySelector(`[data-message-id="${assistantMessageId}"]`);
+                      if (messageDiv) {
+                        const bubble = messageDiv.querySelector('.message-bubble');
+                        if (bubble) {
+                          const videoPreviewBox = document.createElement("div");
+                          videoPreviewBox.className = "video-preview-box";
+                          
+                          const video = document.createElement("video");
+                          video.src = finalVideoUrl + '?t=' + Date.now();
+                          video.muted = true;
+                          video.loop = true;
+                          video.playsInline = true;
+                          
+                          const playIcon = document.createElement("div");
+                          playIcon.className = "video-play-icon";
+                          playIcon.textContent = "▶";
+                          
+                          videoPreviewBox.appendChild(video);
+                          videoPreviewBox.appendChild(playIcon);
+                          
+                          videoPreviewBox.addEventListener("click", () => {
+                            const fullVideo = document.createElement("video");
+                            fullVideo.controls = true;
+                            fullVideo.style.width = "350px";
+                            fullVideo.style.height = "350px";
+                            fullVideo.style.borderRadius = "12px";
+                            fullVideo.style.objectFit = "cover";
+                            fullVideo.src = finalVideoUrl + '?t=' + Date.now();
+                            fullVideo.muted = false;
+                            
+                            bubble.innerHTML = "";
+                            bubble.appendChild(fullVideo);
+                            
+                            fullVideo.play().catch(e => {
+                              console.error("播放视频失败:", e);
+                              showToast("播放视频失败", "error");
+                            });
+                          });
+                          
+                          video.addEventListener('loadeddata', () => {
+                            video.currentTime = 0.1;
+                          }, { once: true });
+                          
+                          bubble.innerHTML = "";
+                          bubble.appendChild(videoPreviewBox);
+                        }
+                      }
+                      
+                      // 更新历史记录
+                      if (chatHistory[currentChatId]) {
+                        const message = chatHistory[currentChatId].messages.find(m => m.messageId === assistantMessageId);
+                        if (message) {
+                          message.videoUrl = finalVideoUrl;
+                          message.videoTaskId = videoTaskId;
+                        }
+                      }
+                      
+                      // 视频生成完成，停止日志轮询
+                      stopLogPolling();
+                      isWaitingForVideo = false;
+                      sendBtn.disabled = false;
+                    } else if (status === 'running' || status === 'pending') {
+                      setTimeout(checkVideoStatus, 2000);
+                    } else {
+                      showToast("视频生成失败", "error");
+                      stopLogPolling();
+                      const messageDiv = document.querySelector(`[data-message-id="${assistantMessageId}"]`);
+                      if (messageDiv) {
+                        const bubble = messageDiv.querySelector('.message-bubble');
+                        if (bubble) {
+                          bubble.textContent = "视频生成失败";
+                        }
+                      }
+                      isWaitingForVideo = false;
+                      sendBtn.disabled = false;
+                    }
+                  } else {
+                    showToast("查询视频状态失败", "error");
+                    stopLogPolling();
+                    isWaitingForVideo = false;
+                    sendBtn.disabled = false;
+                  }
+                } catch (error) {
+                  console.error("查询视频状态失败:", error);
+                  showToast("查询视频状态失败", "error");
+                  stopLogPolling();
+                  isWaitingForVideo = false;
+                  sendBtn.disabled = false;
+                }
+              };
+              
+              setTimeout(checkVideoStatus, 2000);
+            } else {
+              // 视频模式但没有视频数据，显示错误
+              stopLogPolling();
+              addMessage("视频生成失败：未返回视频数据", false, null, 0, assistantMessageId, 'sent');
+              sendBtn.disabled = false;
+            }
+          }
+          
+          // 保存消息到历史记录（数据库已自动保存，这里不需要额外操作）
+          saveChatHistory();
+      } catch (error) {
+        hideTypingIndicator();
+        isWaitingForAudio = false;
+        isWaitingForVideo = false;
+        
+        // 停止日志轮询
+        stopLogPolling();
+        
+        // 如果是取消请求，不显示错误
+        if (error.name === 'AbortError') {
+          console.log("请求已取消");
+          // 停止流式输出
+          isStreaming = false;
+          const currentStreamingId = streamingMessageId; // 保存当前值
+          streamingMessageId = null;
+          isWaitingForAudio = false;
+          
+          // 移除发送中的用户消息
+          const userMessageDiv = document.querySelector(`[data-message-id="${userMessageId}"]`);
+          if (userMessageDiv) {
+            userMessageDiv.remove();
+          }
+          
+          // 移除正在生成的消息（如果有）
+          if (currentStreamingId) {
+            const streamingDiv = document.querySelector(`[data-message-id="${currentStreamingId}"]`);
+            if (streamingDiv) {
+              streamingDiv.remove();
+            }
+          }
+          
+          // 移除输入指示器
+          hideTypingIndicator();
+          
+          // 恢复发送按钮
+          sendBtn.disabled = false;
+          
+          return;
+        }
+        
+        const errorMessage = "❌ 网络错误: " + error.message;
+        const errorMessageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const errorDiv = addMessage(errorMessage, false, null, 0, errorMessageId);
+        
+        // 添加重试按钮
+        const retryBtn = document.createElement("button");
+        retryBtn.className = "retry-btn";
+        retryBtn.textContent = "🔄 重试";
+        retryBtn.onclick = () => {
+          sendMessage(text, userMessageId);
+          errorDiv.remove();
+        };
+        errorDiv.querySelector('.message-bubble').appendChild(retryBtn);
+        
+        // 更新用户消息状态为错误
+        updateMessageStatus(userMessageId, 'error');
+      } finally {
+        // 确保停止日志轮询
+        stopLogPolling();
+        
+        // 如果不在等待音频，恢复发送按钮
+        if (!isWaitingForAudio && !isWaitingForVideo) {
+        sendBtn.disabled = false;
+        }
+        abortController = null;
+      }
+    }
+    
+    // 发送按钮点击
+    sendBtn.addEventListener("click", () => {
+      sendMessage(chatInput.value.trim());
+    });
+    
+    // Enter发送，Shift+Enter换行
+    chatInput.addEventListener("keydown", (e) => {
+      // 如果正在处理语音识别，禁止发送
+      if (isTranscribing) {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          showToast("请等待语音识别完成", "warning");
+        }
+        return;
+      }
+      
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage(chatInput.value.trim());
+      }
+    });
+    
+    // ==================== 禁用/启用输入控件 ====================
+    function setInputControlsDisabled(disabled) {
+      const chatInput = document.getElementById("chatInput");
+      const recordBtn = document.getElementById("recordBtn");
+      const uploadBtn = document.getElementById("uploadBtn");
+      const sendBtn = document.getElementById("sendBtn");
+      
+      if (chatInput) {
+        chatInput.disabled = disabled;
+      }
+      if (recordBtn) {
+        recordBtn.disabled = disabled;
+      }
+      if (uploadBtn) {
+        uploadBtn.disabled = disabled;
+      }
+      // sendBtn 在语音识别期间也禁用，识别完成后恢复
+      if (sendBtn) {
+        sendBtn.disabled = disabled;
+      }
+    }
+    
+    // ==================== 语音录制功能 ====================
+    async function startRecording() {
+      // 如果正在处理语音识别，禁止录制
+      if (isTranscribing) {
+        showToast("请等待语音识别完成", "warning");
+        return;
+      }
+      
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+          audioChunks.push(event.data);
+          }
+        };
+        
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+          
+          // 转换为Base64
+          const reader = new FileReader();
+          reader.onload = async () => {
+            const arrayBuffer = reader.result;
+            const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+            currentAudioBase64 = base64;
+            
+            // 禁用输入控件，开始语音识别
+            isTranscribing = true;
+            setInputControlsDisabled(true);
+            showToast("正在识别语音...", "info");
+            
+            try {
+              // 自动进行语音识别
+              const text = await performTranscription();
+              if (text) {
+                // 将识别到的文本填入输入框
+                chatInput.value = text;
+                showToast("语音识别完成", "success");
+                // 可选：自动发送消息
+                // sendMessage(text);
+              } else {
+                showToast("语音识别失败", "error");
+              }
+            } catch (error) {
+              console.error('语音识别出错:', error);
+              showToast("语音识别失败: " + (error.message || "未知错误"), "error");
+            } finally {
+              // 恢复输入控件
+              isTranscribing = false;
+              setInputControlsDisabled(false);
+            }
+          };
+          reader.readAsArrayBuffer(audioBlob);
+          
+          // 停止所有音频轨道
+          stream.getTracks().forEach(track => track.stop());
+        };
+        
+        mediaRecorder.start();
+        isRecording = true;
+        recordBtn.classList.add("recording");
+        recordBtn.textContent = "⏹️";
+        recordBtn.title = "停止录制";
+        
+        // 显示录音时间（如果有recordingTime元素）
+        recordingStartTime = Date.now();
+        if (recordingTimer) clearInterval(recordingTimer);
+        recordingTimer = setInterval(() => {
+          const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+          const minutes = Math.floor(elapsed / 60);
+          const seconds = elapsed % 60;
+          // 可以在这里更新录音时间显示
+        }, 1000);
+      } catch (error) {
+        console.error('录音失败:', error);
+        alert("无法访问麦克风: " + error.message);
+      }
+    }
+    
+    function stopRecording() {
+      if (mediaRecorder && isRecording) {
+        mediaRecorder.stop();
+        isRecording = false;
+        recordBtn.classList.remove("recording");
+        recordBtn.textContent = "🎤";
+        recordBtn.title = "录制语音";
+        
+        // 清除录音计时器
+        if (recordingTimer) {
+          clearInterval(recordingTimer);
+          recordingTimer = null;
+        }
+      }
+    }
+    
+    // 语音识别
+    async function performTranscription() {
+      if (!currentAudioBase64) {
+        showToast('没有可识别的音频', "error");
+        return null;
+      }
+
+      try {
+        // 使用api.js中的函数，支持超时处理
+        const result = await transcribeAudio({
+          audio_base64: currentAudioBase64,
+          model_name: 'base',
+          language: null,
+          task: 'transcribe'
+        });
+
+        if (result.success && result.data) {
+          const text = result.data.text || '';
+          return text;
+        } else {
+          throw new Error(result.error?.message || result.error || '识别失败');
+        }
+      } catch (error) {
+        console.error('语音识别失败:', error);
+        const errorMsg = error.message || '识别失败';
+        throw error; // 抛出错误，让调用者处理
+      }
+    }
+    
+    recordBtn.addEventListener("click", () => {
+      // 如果正在处理语音识别，禁止录制
+      if (isTranscribing) {
+        showToast("请等待语音识别完成", "warning");
+        return;
+      }
+      
+      if (isRecording) {
+        stopRecording();
+      } else {
+        startRecording();
+      }
+    });
+    
+    // ==================== 音频上传功能 ====================
+    uploadBtn.addEventListener("click", () => {
+      // 如果正在处理语音识别，禁止上传
+      if (isTranscribing) {
+        showToast("请等待语音识别完成", "warning");
+        return;
+      }
+      audioUpload.click();
+    });
+    
+    audioUpload.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) {
+        audioUpload.value = "";
+        return;
+      }
+      
+      // 如果正在处理语音识别，禁止上传
+      if (isTranscribing) {
+        showToast("请等待语音识别完成", "warning");
+        audioUpload.value = "";
+        return;
+      }
+      
+      if (!file.type.startsWith('audio/')) {
+        showToast("请选择音频文件！", "error");
+        audioUpload.value = "";
+        return;
+      }
+      
+      // 检查文件大小（限制为50MB）
+      const maxSize = 50 * 1024 * 1024; // 50MB
+      if (file.size > maxSize) {
+        showToast("音频文件过大，请选择小于50MB的文件", "error");
+        audioUpload.value = "";
+        return;
+      }
+      
+      console.log('开始处理上传的音频文件:', {
+        name: file.name,
+        type: file.type,
+        size: file.size
+      });
+      
+      // 读取文件并转换为Base64（完全按照录音的方式处理）
+      const reader = new FileReader();
+      
+      reader.onload = async () => {
+        try {
+          const arrayBuffer = reader.result;
+          console.log('文件读取完成，ArrayBuffer大小:', arrayBuffer.byteLength);
+          
+          // 使用与录音相同的方式转换为Base64（处理大文件）
+          const uint8Array = new Uint8Array(arrayBuffer);
+          // 对于大文件，分块处理避免"Maximum call stack size exceeded"错误
+          let base64 = '';
+          const chunkSize = 8192; // 每次处理8KB
+          for (let i = 0; i < uint8Array.length; i += chunkSize) {
+            const chunk = uint8Array.slice(i, i + chunkSize);
+            base64 += String.fromCharCode.apply(null, chunk);
+          }
+          base64 = btoa(base64);
+          
+          console.log('Base64转换完成，长度:', base64.length);
+          currentAudioBase64 = base64;
+          
+          // 禁用输入控件，开始语音识别（与录音完全一致）
+          isTranscribing = true;
+          setInputControlsDisabled(true);
+          showToast("正在识别语音...", "info");
+          
+          try {
+            // 自动进行语音识别（与录音使用相同的函数）
+            const text = await performTranscription();
+            if (text && text.trim()) {
+              // 将识别到的文本填入输入框
+              chatInput.value = text;
+              showToast("语音识别完成", "success");
+              console.log('语音识别成功，文本:', text);
+              // 可选：自动发送消息
+              // sendMessage(text);
+            } else {
+              showToast("语音识别失败：未识别到文本", "error");
+              console.warn('语音识别返回空文本');
+            }
+          } catch (error) {
+            console.error('语音识别出错:', error);
+            showToast("语音识别失败: " + (error.message || "未知错误"), "error");
+          } finally {
+            // 恢复输入控件
+            isTranscribing = false;
+            setInputControlsDisabled(false);
+            currentAudioBase64 = null; // 清理，释放内存
+          }
+        } catch (error) {
+          console.error('Base64转换失败:', error);
+          showToast('音频文件处理失败: ' + (error.message || "未知错误"), "error");
+          currentAudioBase64 = null;
+          // 恢复输入控件
+          isTranscribing = false;
+          setInputControlsDisabled(false);
+        }
+      };
+      
+      reader.onerror = (error) => {
+        console.error('文件读取错误:', error);
+        showToast('读取音频文件失败', "error");
+        currentAudioBase64 = null;
+        // 恢复输入控件
+        isTranscribing = false;
+        setInputControlsDisabled(false);
+      };
+      
+      // 开始读取文件（与录音使用相同的方式）
+      try {
+        reader.readAsArrayBuffer(file);
+      } catch (error) {
+        console.error('读取文件失败:', error);
+        showToast('读取音频文件失败: ' + (error.message || "未知错误"), "error");
+        currentAudioBase64 = null;
+        // 恢复输入控件
+        isTranscribing = false;
+        setInputControlsDisabled(false);
+        audioUpload.value = "";
+      }
+      
+      // 注意：不在这里重置文件输入，等处理完成后再重置
+      // 如果立即重置，可能会导致某些浏览器的问题
+    });
+    
+    // ==================== 音量控制 ====================
+    function updateAllAudioVolumes() {
+      if (!volumeSlider) return;
+      // 更新所有音频元素的音量（包括隐藏的audio元素）
+      const volume = isMuted ? 0 : volumeSlider.value / 100;
+      // 更新当前音频引用
+      if (currentAudio) {
+        currentAudio.volume = volume;
+      }
+      // 更新所有消息中的隐藏音频元素（audio-bubble中的audio元素）
+      const allMessageAudios = document.querySelectorAll('.message audio');
+      allMessageAudios.forEach(audio => {
+        audio.volume = volume;
+      });
+    }
+    
+    if (volumeSlider && volumeValue) {
+    volumeSlider.addEventListener("input", (e) => {
+      const volume = e.target.value;
+      volumeValue.textContent = volume + "%";
+      updateAllAudioVolumes();
+    });
+    }
+    
+    if (volumeBtn && volumeControl) {
+    volumeBtn.addEventListener("click", () => {
+      isMuted = !isMuted;
+      
+      if (isMuted) {
+        volumeBtn.textContent = "🔇";
+        volumeControl.classList.add("muted");
+      } else {
+        volumeBtn.textContent = "🔊";
+        volumeControl.classList.remove("muted");
+      }
+      updateAllAudioVolumes();
+    });
+    }
+    
+    // ==================== 对话管理功能 ====================
+    // 注意：对话管理按钮的事件监听器已在 DOMContentLoaded 外部绑定
+    
+    // 编辑对话名称
+    function editChatName(chatId, titleSpan, editBtn) {
+      const chatData = chatHistory[chatId];
+      if (!chatData) return;
+      
+      const currentTitle = chatData.title || '未命名对话';
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = currentTitle;
+      input.style.width = "100%";
+      
+      // 替换标题为输入框
+      titleSpan.style.display = 'none';
+      editBtn.style.display = 'none';
+      titleSpan.parentElement.insertBefore(input, titleSpan);
+      
+      input.focus();
+      input.select();
+      
+      const finishEdit = () => {
+        const newTitle = input.value.trim() || '未命名对话';
+        chatData.title = newTitle;
+        titleSpan.textContent = newTitle;
+        titleSpan.style.display = '';
+        editBtn.style.display = '';
+        input.remove();
+        saveChatHistory();
+        updateHistoryList(); // 重新渲染以更新显示
+      };
+      
+      input.addEventListener("blur", finishEdit);
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          finishEdit();
+        } else if (e.key === "Escape") {
+          titleSpan.style.display = '';
+          editBtn.style.display = '';
+          input.remove();
+        }
+      });
+    }
+    
+    // 更新历史列表
+    function updateHistoryList() {
+      const historyList = document.getElementById("historyList");
+      if (!historyList) return;
+      historyList.innerHTML = '';
+      
+      // 添加当前对话
+      const currentItem = document.createElement("div");
+      currentItem.className = `history-item ${currentChatId === 'current' ? 'active' : ''}`;
+      currentItem.dataset.id = 'current';
+      
+      const currentTitleDiv = document.createElement("div");
+      currentTitleDiv.className = "history-item-title";
+      
+      const currentTitleSpan = document.createElement("span");
+      currentTitleSpan.textContent = "当前对话";
+      currentTitleSpan.style.flex = '1';
+      currentTitleSpan.style.cursor = 'pointer';
+      
+      const currentEditBtn = document.createElement("span");
+      currentEditBtn.className = "history-item-edit";
+      currentEditBtn.textContent = "✏️";
+      currentEditBtn.title = "编辑名称";
+      currentEditBtn.onclick = (e) => {
+        e.stopPropagation();
+        editChatName('current', currentTitleSpan, currentEditBtn);
+      };
+      
+      // 双击标题也可以编辑（不影响单击切换对话）
+      currentTitleSpan.ondblclick = (e) => {
+        e.stopPropagation();
+        editChatName('current', currentTitleSpan, currentEditBtn);
+      };
+      
+      // 单击标题区域时切换对话（不阻止事件冒泡）
+      currentTitleSpan.onclick = (e) => {
+        // 不阻止事件传播，让item的click事件触发
+      };
+      
+      currentTitleDiv.appendChild(currentTitleSpan);
+      currentTitleDiv.appendChild(currentEditBtn);
+      
+      const currentTimeDiv = document.createElement("div");
+      currentTimeDiv.className = "history-item-time";
+      currentTimeDiv.textContent = "进行中";
+      
+      currentItem.appendChild(currentTitleDiv);
+      currentItem.appendChild(currentTimeDiv);
+      
+      // 确保点击item的任何位置都能切换对话
+      currentItem.addEventListener("click", (e) => {
+        // 如果点击的是编辑按钮，不切换对话
+        if (e.target === currentEditBtn || currentEditBtn.contains(e.target)) {
+          return;
+        }
+        switchChat('current');
+      });
+      historyList.appendChild(currentItem);
+      
+      // 添加历史对话（过滤掉空的会话）
+      const sortedChats = Object.entries(chatHistory)
+        .filter(([id]) => id !== 'current')
+        .filter(([id, data]) => data.messages && data.messages.length > 0)  // 只显示有消息的会话
+        .sort((a, b) => new Date(b[1].time) - new Date(a[1].time));
+      
+      sortedChats.forEach(([chatId, chatData]) => {
+        const item = document.createElement("div");
+        item.className = `history-item ${currentChatId === chatId ? 'active' : ''}`;
+        item.dataset.id = chatId;
+        
+        const titleDiv = document.createElement("div");
+        titleDiv.className = "history-item-title";
+        
+        const titleSpan = document.createElement("span");
+        titleSpan.textContent = chatData.title || '未命名对话';
+        titleSpan.style.flex = '1';
+        titleSpan.style.cursor = 'pointer';
+        
+        const editBtn = document.createElement("span");
+        editBtn.className = "history-item-edit";
+        editBtn.textContent = "✏️";
+        editBtn.title = "编辑名称";
+        editBtn.onclick = (e) => {
+          e.stopPropagation();
+          editChatName(chatId, titleSpan, editBtn);
+        };
+        
+        // 双击标题也可以编辑（不影响单击切换对话）
+        titleSpan.ondblclick = (e) => {
+          e.stopPropagation();
+          editChatName(chatId, titleSpan, editBtn);
+        };
+        
+        // 单击标题区域时切换对话（不阻止事件冒泡）
+        titleSpan.onclick = (e) => {
+          // 不阻止事件传播，让item的click事件触发
+        };
+        
+        titleDiv.appendChild(titleSpan);
+        titleDiv.appendChild(editBtn);
+        
+        const timeDiv = document.createElement("div");
+        timeDiv.className = "history-item-time";
+        timeDiv.textContent = new Date(chatData.time).toLocaleString('zh-CN');
+        
+        item.appendChild(titleDiv);
+        item.appendChild(timeDiv);
+        
+        // 确保点击item的任何位置都能切换对话
+        item.addEventListener("click", (e) => {
+          // 如果点击的是编辑按钮，不切换对话
+          if (e.target === editBtn || editBtn.contains(e.target)) {
+            return;
+          }
+          switchChat(chatId);
+        });
+        historyList.appendChild(item);
+      });
+    }
+    
+    // 切换对话
+    function switchChat(chatId) {
+      // 保存当前对话
+      if (chatHistory[currentChatId]) {
+        saveChatHistory();
+      }
+      
+      // 切换到新对话
+      currentChatId = chatId;
+      
+      // 如果对话不存在，创建新对话
+      if (!chatHistory[currentChatId]) {
+        chatHistory[currentChatId] = {
+          messages: [],
+          title: chatId === 'current' ? "当前对话" : "新对话",
+          time: new Date().toISOString(),
+          sessionId: null,
+          character: null,
+          model: null
+        };
+      } else {
+        // 如果对话存在，恢复会话ID、角色和模型
+        currentSessionId = chatHistory[currentChatId].sessionId || null;
+        character = chatHistory[currentChatId].character || null;
+        model = chatHistory[currentChatId].model || null;
+      }
+      
+      // 清空消息显示区域
+      chatMessages.innerHTML = '';
+      
+      // 加载对话消息
+      const messages = chatHistory[currentChatId].messages || [];
+      if (messages.length === 0) {
+        chatMessages.innerHTML = '<div class="empty-state"><p>👋 开始对话吧！输入文字或录制语音与AI交流</p></div>';
+      } else {
+        // 临时禁用保存，避免重复保存
+        const wasStreaming = isStreaming;
+        isStreaming = true;
+        
+        messages.forEach(msg => {
+          // 历史记录显示完整内容（文本、音频、视频）
+          // 直接使用消息对象中的 responseMode（已在 loadChatHistoryFromDatabase 中推断）
+          const messageDiv = addMessage(
+            msg.text,
+            msg.isUser,
+            msg.audioBase64 || null,  // 传递音频数据
+            msg.audioDuration || 0,   // 传递音频时长
+            msg.messageId,
+            msg.status || 'sent',
+            { 
+              audioUrl: msg.audioUrl,
+              videoUrl: msg.videoUrl,
+              videoTaskId: msg.videoTaskId,
+              responseMode: msg.responseMode  // 使用已推断的 responseMode
+            }
+          );
+          
+          // 如果是错误消息，添加重试按钮
+          if (!msg.isUser && msg.text.includes('❌')) {
+            const retryBtn = document.createElement("button");
+            retryBtn.className = "retry-btn";
+            retryBtn.textContent = "🔄 重试";
+            retryBtn.onclick = () => {
+              // 找到对应的用户消息
+              const userMsg = messages.find(m => m.isUser && messages.indexOf(m) < messages.indexOf(msg));
+              if (userMsg) {
+                sendMessage(userMsg.text, userMsg.messageId);
+                messageDiv.remove();
+              }
+            };
+            messageDiv.querySelector('.message-bubble').appendChild(retryBtn);
+          }
+        });
+        
+        // 恢复流式状态
+        isStreaming = wasStreaming;
+      }
+      
+      // 更新历史列表
+      updateHistoryList();
+      
+      // 关闭侧边栏
+      chatSidebar.classList.remove("active");
+    }
+    
+    // 注意：新建对话、清空对话、导出对话的事件监听器已在 DOMContentLoaded 中绑定
+    
+    // 页面加载时自动加载历史聊天记录
+    initChatHistory().then(() => {
+    updateHistoryList();
+    });
+    
+    // 页面卸载时取消正在进行的请求（只有真正关闭标签页时才取消）
+    window.addEventListener('beforeunload', () => {
+      if (abortController) {
+        abortController.abort();
+      }
+    });
+    
+  </script>
+</body>
+</html>
+
+

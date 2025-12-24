@@ -1,0 +1,41 @@
+output/*
+!output/.gitkeep
+
+scripts
+
+database/audios/
+database/texts/
+database/videos/
+database/chat_records.db
+database/settings.db
+database/video_records.db
+
+assets/*
+!assets/.gitkeep
+
+environment/api/
+environment/syncnet/
+environment/llm_talk/
+environment/nerffacespeech/
+environment/env_tar/
+
+
+data/*
+!data/.gitkeep
+
+docs/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ==================== Docker 相关 ====================
+# Docker 目录下的运行时数据（如果存在）
+docker/database/
+docker/outputs/
+docker/data/
+docker/weights/
+docker/Hugging_Face/
+docker/*.log
+docker/*.tmp

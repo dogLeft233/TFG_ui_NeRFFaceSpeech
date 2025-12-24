@@ -1,0 +1,87 @@
+# Git 相关
+.git
+.gitignore
+.gitattributes
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# 环境配置文件（保留，构建时需要）
+# environment/package/     # 保留：包含环境配置文件
+# environment/*.yaml        # 保留：环境定义文件
+
+# 已创建的 conda 环境目录（忽略，不需要）
+# 这些目录会在构建时创建，不需要包含在构建上下文中
+environment/nerffacespeech/
+environment/api/
+environment/syncnet/
+environment/llm_talk/
+
+# 大型数据文件
+data/
+database/
+output/
+outputs/
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.wav
+*.mp3
+*.flac
+
+# 模型文件（通过 volume 挂载）
+NeRFFaceSpeech_Code/pretrained_networks/*.pkl
+NeRFFaceSpeech_Code/pretrained_networks/*.pth
+NeRFFaceSpeech_Code/pretrained_networks/*.pt
+NeRFFaceSpeech_Code/pretrained_networks/*.ckpt
+
+# 缓存目录（通过 volume 挂载）
+assets/.cache/
+assets/models/
+Hugging_Face/
+weights/
+
+# 文档和说明
+*.md
+docs/
+README*
+
+# IDE 配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 日志文件
+*.log
+logs/
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+
+# Docker 相关
+docker/dockerhistory.txt
+docker/*.md
+docker/__pycache__/
+
+# 测试文件
+test/
+tests/
+*_test.py
+*_test_*.py
+
+# 其他
+.DS_Store
+Thumbs.db
+

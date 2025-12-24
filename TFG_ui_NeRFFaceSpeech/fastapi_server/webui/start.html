@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeRFFaceSpeech - 开发者入口</title>
+  <style>
+    /* 主题变量定义 */
+    :root {
+      --primary: #1e40af;
+      --primary-2: #3b82f6;
+      --bg: #0b1020;
+      --card: rgba(255,255,255,0.06);
+      --border: rgba(255,255,255,0.14);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --g1: rgba(59,130,246,0.16);
+      --g2: rgba(14,165,233,0.14);
+      --g3: rgba(56,189,248,0.12);
+      --card-bg: rgba(59,130,246,0.25);
+    }
+    body.theme-tech {
+      --primary: #1e40af;
+      --primary-2: #3b82f6;
+      --bg: #0b1020;
+      --card: rgba(255,255,255,0.06);
+      --border: rgba(255,255,255,0.14);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --g1: rgba(59,130,246,0.16);
+      --g2: rgba(14,165,233,0.14);
+      --g3: rgba(56,189,248,0.12);
+      --card-bg: rgba(59,130,246,0.25);
+    }
+    body.theme-warm {
+      --primary: #f97316;
+      --primary-2: #ea580c;
+      --bg: #fff8f0;
+      --card: rgba(255,255,255,0.9);
+      --border: rgba(249,115,22,0.2);
+      --text: #1f2937;
+      --muted: #6b7280;
+      --g1: rgba(251,191,36,0.15);
+      --g2: rgba(249,115,22,0.12);
+      --g3: rgba(234,88,12,0.1);
+      --card-bg: rgba(251,191,36,0.15);
+    }
+    body.theme-minimal {
+      --primary: #6b7280;
+      --primary-2: #4b5563;
+      --bg: #f5f5f5;
+      --card: #ffffff;
+      --border: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --g1: rgba(107,114,128,0.08);
+      --g2: rgba(75,85,99,0.07);
+      --g3: rgba(156,163,175,0.06);
+      --card-bg: rgba(107,114,128,0.1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --base-font-size: 14px;
+    }
+    html {
+      font-size: var(--base-font-size);
+    }
+    body {
+      margin: 0;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at 20% 20%, var(--g1), transparent 25%),
+                  radial-gradient(circle at 80% 30%, var(--g2), transparent 25%),
+                  radial-gradient(circle at 50% 80%, var(--g3), transparent 22%),
+                  var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      max-width: 900px;
+      width: 100%;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .header h1 {
+      font-size: 48px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, var(--primary-2), #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header p {
+      font-size: 18px;
+      color: var(--muted);
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    .card {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-2));
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+    .card:hover {
+      border-color: var(--primary);
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+    .card:hover::before {
+      transform: scaleX(1);
+    }
+    .card-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+    .card h2 {
+      font-size: 24px;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+    .card p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .card-url {
+      font-size: 12px;
+      color: var(--primary-2);
+      background: rgba(59,130,246,0.1);
+      padding: 6px 12px;
+      border-radius: 6px;
+      display: inline-block;
+      font-family: ui-monospace, monospace;
+    }
+    .status {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 24px;
+    }
+    .status-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .status-item:last-child {
+      border-bottom: none;
+    }
+    .status-label {
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .status-value {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #9ca3af;
+    }
+    .status-dot.active {
+      background: #4ade80;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .footer {
+      text-align: center;
+      margin-top: 48px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    /* 设置按钮 */
+    .settings-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .settings-btn:hover {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    /* 侧边栏遮罩 */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 2000;
+      transition: opacity 0.3s ease;
+    }
+    .sidebar-overlay.active {
+      display: block;
+    }
+    /* 侧边栏 */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      right: -400px;
+      width: 400px;
+      height: 100vh;
+      background: var(--bg);
+      border-left: 1px solid var(--border);
+      z-index: 2001;
+      transition: right 0.3s ease;
+      overflow-y: auto;
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
+    }
+    .sidebar.active {
+      right: 0;
+    }
+    .sidebar-content {
+      padding: 24px;
+    }
+    .sidebar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-header h2 {
+      margin: 0;
+      font-size: 20px;
+      color: var(--text);
+    }
+    .sidebar-close {
+      background: none;
+      border: none;
+      font-size: 28px;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+    .sidebar-close:hover {
+      background: var(--card-bg);
+      color: var(--text);
+    }
+    .sidebar-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-tab {
+      padding: 10px 20px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .sidebar-tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .option-card {
+      padding: 16px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      background: var(--card-bg);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+    .option-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .option-card.selected {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #fff;
+    }
+    .option-card.selected .option-name {
+      color: #fff;
+    }
+    .option-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .option-desc {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .option-card.selected .option-desc {
+      color: rgba(255, 255, 255, 0.9);
+    }
+    .font-size-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .font-size-btn {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      background: var(--card-bg);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .font-size-btn:hover {
+      border-color: var(--primary);
+    }
+    .font-size-btn.selected {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #fff;
+    }
+    .font-size-custom {
+      margin-top: 16px;
+    }
+    .font-size-custom input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card-bg);
+      color: var(--text);
+      font-size: 14px;
+    }
+  </style>
+  <script src="settings.js"></script>
+</head>
+<body>
+  <button class="settings-btn" id="settingsBtn">⚙️ 设置</button>
+  
+  <!-- 侧边栏遮罩 -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  
+  <!-- 设置侧边栏 -->
+  <div class="sidebar" id="settingsSidebar">
+    <div class="sidebar-content">
+      <div class="sidebar-header">
+        <h2>设置</h2>
+        <button class="sidebar-close" id="sidebarClose">×</button>
+      </div>
+      
+      <div class="sidebar-tabs">
+        <button class="sidebar-tab active" data-tab="theme">主题</button>
+        <button class="sidebar-tab" data-tab="font">字体</button>
+      </div>
+      
+      <!-- 主题设置 -->
+      <div class="tab-content active" id="themeTab">
+        <div class="options-grid">
+          <div class="option-card" data-theme="tech">
+            <div class="option-name">科技风</div>
+            <div class="option-desc">深蓝色科技感</div>
+          </div>
+          <div class="option-card" data-theme="warm">
+            <div class="option-name">温馨风</div>
+            <div class="option-desc">暖色调温馨</div>
+          </div>
+          <div class="option-card" data-theme="minimal">
+            <div class="option-name">简约风</div>
+            <div class="option-desc">灰色简约</div>
+          </div>
+        </div>
+      </div>
+      
+      <div id="fontTab" class="tab-content">
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 8px; color: var(--text); font-weight: 500;">字体样式</label>
+          <div class="options-grid">
+            <div class="option-card" data-font="SimSun">
+              <div class="option-name">宋体</div>
+              <div class="option-desc">SimSun</div>
+            </div>
+            <div class="option-card" data-font="SimHei">
+              <div class="option-name">黑体</div>
+              <div class="option-desc">SimHei</div>
+            </div>
+            <div class="option-card" data-font="Microsoft YaHei">
+              <div class="option-name">微软雅黑</div>
+              <div class="option-desc">Microsoft YaHei</div>
+            </div>
+            <div class="option-card" data-font="Arial">
+              <div class="option-name">Arial</div>
+              <div class="option-desc">Arial</div>
+            </div>
+            <div class="option-card" data-font="Times New Roman">
+              <div class="option-name">Times New Roman</div>
+              <div class="option-desc">Times New Roman</div>
+            </div>
+            <div class="option-card" data-font="Inter">
+              <div class="option-name">Inter</div>
+              <div class="option-desc">Inter（默认）</div>
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <label style="display: block; margin-bottom: 8px; color: var(--text); font-weight: 500;">字号大小</label>
+          <div class="font-size-group">
+            <button class="font-size-btn" data-size="small">小</button>
+            <button class="font-size-btn" data-size="medium">中</button>
+            <button class="font-size-btn" data-size="large">大</button>
+            <button class="font-size-btn" data-size="custom">自定义</button>
+          </div>
+          <div class="font-size-custom" id="customSizeInput" style="display: none;">
+            <input type="number" id="customSizeValue" placeholder="输入字号（px）" min="10" max="24" value="14">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="header">
+      <h1>NeRFFaceSpeech</h1>
+      <p>开发者模式 - 选择入口</p>
+    </div>
+    
+    <div class="cards">
+      <!-- 后端入口 -->
+      <div class="card" onclick="openBackend()">
+        <div class="card-icon">🖥️</div>
+        <h2>后端显示屏</h2>
+        <p>查看后端实时输出、日志和调试信息<br>监控系统运行状态</p>
+        <div class="card-url">http://localhost:8000/</div>
+      </div>
+      
+      <!-- 前端入口 -->
+      <div class="card" onclick="openFrontend()">
+        <div class="card-icon">🎨</div>
+        <h2>前端应用</h2>
+        <p>使用三个核心功能模块<br>视频生成、对话、训练</p>
+        <div class="card-url">http://localhost:7860/</div>
+      </div>
+    </div>
+    
+    <!-- 状态检查 -->
+    <div class="status">
+      <div class="status-item">
+        <span class="status-label">后端服务器</span>
+        <span class="status-value">
+          <span class="status-dot" id="backendStatus"></span>
+          <span id="backendText">检查中...</span>
+        </span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">前端服务器</span>
+        <span class="status-value">
+          <span class="status-dot active"></span>
+          <span>运行中</span>
+        </span>
+      </div>
+    </div>
+    
+    <div class="footer">
+      北京理工大学 · NeRFFaceSpeech 团队
+    </div>
+  </div>
+
+  <script>
+    // 等待DOM加载完成后再初始化设置事件绑定
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 初始化设置（只在start.html调用，从数据库获取设置）
+      try {
+        await initSettings();
+      } catch (error) {
+        console.error('初始化设置失败:', error);
+        // 即使失败也要继续初始化其他功能，尝试使用缓存的设置
+        try {
+          await applySettingsOnly();
+        } catch (e) {
+          // 如果还是失败，使用默认设置
+          console.error('应用设置也失败:', e);
+        }
+      }
+      
+      // 侧边栏控制
+      const settingsBtn = document.getElementById('settingsBtn');
+      const settingsSidebar = document.getElementById('settingsSidebar');
+      const sidebarOverlay = document.getElementById('sidebarOverlay');
+      const sidebarClose = document.getElementById('sidebarClose');
+      
+      if (!settingsBtn || !settingsSidebar) {
+        console.error('设置按钮或侧边栏元素未找到');
+        return;
+      }
+      
+      function openSidebar() {
+        settingsSidebar.classList.add('active');
+        sidebarOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+      
+      function closeSidebar() {
+        settingsSidebar.classList.remove('active');
+        sidebarOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+      
+      settingsBtn.addEventListener('click', openSidebar);
+      if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
+      if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+      
+      // 分页切换
+      document.querySelectorAll('.sidebar-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          const targetTab = tab.dataset.tab;
+          document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+          tab.classList.add('active');
+          const targetContent = document.getElementById(targetTab + 'Tab');
+          if (targetContent) targetContent.classList.add('active');
+        });
+      });
+      
+      // 主题选择
+      document.querySelectorAll('[data-theme]').forEach(card => {
+        card.addEventListener('click', () => {
+          applyTheme(card.dataset.theme);
+        });
+      });
+      
+      // 字体选择
+      document.querySelectorAll('[data-font]').forEach(card => {
+        card.addEventListener('click', () => {
+          applyFont(card.dataset.font);
+        });
+      });
+      
+      // 字号选择
+      document.querySelectorAll('[data-size]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          applyFontSize(btn.dataset.size);
+        });
+      });
+      
+      // 自定义字号输入
+      const customSizeValue = document.getElementById('customSizeValue');
+      if (customSizeValue) {
+        customSizeValue.addEventListener('change', (e) => {
+          if (customSizeValue.value) {
+            applyFontSize('custom');
+          }
+        });
+      }
+    });
+    
+    // ==================== 页面功能 ====================
+    // 打开后端
+    async function openBackend() {
+      // 从数据库获取当前设置
+      const settings = await fetchSettings();
+      const theme = settings.nerf_theme || 'tech';
+      const font = settings.nerf_font || 'Inter';
+      const fontSize = settings.nerf_font_size || 'medium';
+      let url = 'http://localhost:8000/?theme=' + encodeURIComponent(theme) + 
+                '&font=' + encodeURIComponent(font) + 
+                '&fontSize=' + encodeURIComponent(fontSize);
+      
+      // 如果是自定义字号，也传递
+      if (fontSize === 'custom') {
+        const customSize = settings.nerf_custom_font_size;
+        if (customSize) {
+          url += '&customFontSize=' + encodeURIComponent(customSize);
+        }
+      }
+      
+      window.open(url, '_blank');
+    }
+    
+    // 打开前端
+    function openFrontend() {
+      window.open('/index.html', '_blank');
+    }
+    
+    // 检查后端状态
+    async function checkBackendStatus() {
+      const statusDot = document.getElementById('backendStatus');
+      const statusText = document.getElementById('backendText');
+      
+      try {
+        const response = await fetch('http://localhost:8000/docs', { 
+          method: 'HEAD',
+          mode: 'no-cors',
+          cache: 'no-cache'
+        });
+        statusDot.classList.add('active');
+        statusText.textContent = '运行中';
+      } catch (e) {
+        // 使用 try-catch 处理 no-cors 模式下的错误
+        // 尝试另一种方式检查
+        try {
+          const img = new Image();
+          img.onload = () => {
+            statusDot.classList.add('active');
+            statusText.textContent = '运行中';
+          };
+          img.onerror = () => {
+            statusDot.classList.remove('active');
+            statusText.textContent = '未连接';
+          };
+          img.src = 'http://localhost:8000/favicon.ico?t=' + Date.now();
+          setTimeout(() => {
+            if (!statusDot.classList.contains('active')) {
+              statusText.textContent = '未连接';
+            }
+          }, 2000);
+        } catch (e2) {
+          statusDot.classList.remove('active');
+          statusText.textContent = '未连接';
+        }
+      }
+    }
+    
+    // 页面加载时检查状态
+    checkBackendStatus();
+    // 每5秒检查一次
+    setInterval(checkBackendStatus, 5000);
+  </script>
+</body>
+</html>
+

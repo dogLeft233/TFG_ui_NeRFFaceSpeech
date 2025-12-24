@@ -1,0 +1,9 @@
+# 最小 conda 环境配置（只包含 Python 运行时）
+# 导出命令：conda env export --from-history | grep -v "^prefix:" > environment.min.yaml
+name: nerffacespeech
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9
+  - pip
+

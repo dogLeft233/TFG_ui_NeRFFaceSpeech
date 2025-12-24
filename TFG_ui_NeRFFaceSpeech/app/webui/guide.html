@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>操作指南 - NeRFFaceSpeech</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="settings.js"></script>
+    <style>
+        /* 天蓝色主题 */
+        :root {
+            --guide-primary: #4fc3f7;      /* 天蓝色 */
+            --guide-primary-dark: #29b6f6; /* 深天蓝色 */
+            --guide-primary-light: #81d4fa; /* 浅天蓝色 */
+            --guide-bg: #e0f7fa;           /* 浅天蓝色背景 */
+            --guide-card: #ffffff;
+            --guide-border: #b2ebf2;
+            --guide-text: #004d40;
+            --guide-muted: #00796b;
+        }
+
+        body {
+            background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 50%, #81d4fa 100%);
+            color: var(--guide-text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .guide-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        .guide-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .guide-header h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, var(--guide-primary-dark), var(--guide-primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .guide-header p {
+            font-size: 18px;
+            color: var(--guide-muted);
+        }
+
+        .guide-section {
+            background: var(--guide-card);
+            border: 2px solid var(--guide-border);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 32px;
+            box-shadow: 0 4px 12px rgba(79, 195, 247, 0.1);
+        }
+
+        .guide-section h2 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--guide-primary-dark);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .guide-section h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-top: 24px;
+            margin-bottom: 12px;
+            color: var(--guide-primary-dark);
+        }
+
+        .guide-section p {
+            color: var(--guide-text);
+            line-height: 1.8;
+            margin-bottom: 16px;
+        }
+
+        .guide-section ul,
+        .guide-section ol {
+            color: var(--guide-text);
+            line-height: 1.8;
+            margin-left: 24px;
+            margin-bottom: 16px;
+        }
+
+        .guide-section li {
+            margin-bottom: 8px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin: 24px 0;
+        }
+
+        .feature-item {
+            background: linear-gradient(135deg, rgba(79, 195, 247, 0.1), rgba(129, 212, 250, 0.1));
+            border: 1px solid var(--guide-border);
+            border-left: 4px solid var(--guide-primary);
+            padding: 16px;
+            border-radius: 12px;
+        }
+
+        .feature-item h4 {
+            color: var(--guide-primary-dark);
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .feature-item p {
+            margin: 0;
+            font-size: 14px;
+            color: var(--guide-muted);
+        }
+
+        .back-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--guide-primary), var(--guide-primary-dark));
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            margin-top: 32px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .back-button:hover {
+            background: linear-gradient(135deg, var(--guide-primary-dark), var(--guide-primary));
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 195, 247, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="guide-container">
+        <div class="guide-header">
+            <h1>📖 操作指南</h1>
+            <p>NeRFFaceSpeech 功能说明</p>
+        </div>
+
+        <!-- 主页 -->
+        <div class="guide-section">
+            <h2>🏠 主页</h2>
+            <p>系统主入口，提供快速导航和个性化设置。</p>
+            
+            <h3>主要功能：</h3>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <h4>📚 API文档</h4>
+                    <p>查看完整的API接口文档</p>
+                </div>
+                <div class="feature-item">
+                    <h4>📖 操作指南</h4>
+                    <p>查看详细的功能使用说明</p>
+                </div>
+                <div class="feature-item">
+                    <h4>🎨 主题切换</h4>
+                    <p>支持更换系统主题（科技风/温馨风/简约风）</p>
+                </div>
+                <div class="feature-item">
+                    <h4>🔤 字体设置</h4>
+                    <p>可以更换字体样式和字号大小</p>
+                </div>
+                <div class="feature-item">
+                    <h4>💾 自动保存</h4>
+                    <p>设置选项自动保存到数据库</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 视频生成 -->
+        <div class="guide-section">
+            <h2>🎬 视频生成</h2>
+            <p>从文本输入生成 NeRF 视频，系统自动完成 LLM 文本生成、TTS 音频生成和 NeRF 视频生成。</p>
+            
+            <h3>主要功能：</h3>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <h4>📝 文本输入</h4>
+                    <p>输入任意文本内容作为视频生成依据</p>
+                </div>
+                <div class="feature-item">
+                    <h4>🎭 角色选择</h4>
+                    <p>选择不同的角色进行视频生成</p>
+                </div>
+                <div class="feature-item">
+                    <h4>🤖 模型选择</h4>
+                    <p>选择不同的模型来生成视频</p>
+                </div>
+                <div class="feature-item">
+                    <h4>📚 历史记录</h4>
+                    <p>查看历史生成记录，支持回放和下载</p>
+                </div>
+                <div class="feature-item">
+                    <h4>📊 进度显示</h4>
+                    <p>实时显示生成进度条和阶段信息</p>
+                </div>
+                <div class="feature-item">
+                    <h4>🎬 视频输出</h4>
+                    <p>自动生成 H.264 格式视频文件</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 语音对话 -->
+        <div class="guide-section">
+            <h2>💬 语音对话</h2>
+            <p>通过语音输入与 AI 对话，支持文本、音频、视频三种响应模式。</p>
+            
+            <h3>主要功能：</h3>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <h4>🎯 回复模态选择</h4>
+                    <p>选择文本/音频/视频三种响应模式</p>
+                </div>
+                <div class="feature-item">
+                    <h4>🎙️ 在线录音</h4>
+                    <p>支持麦克风实时录音，自动转文字</p>
+                </div>
+                <div class="feature-item">
+                    <h4>📁 上传录音</h4>
+                    <p>支持上传音频文件，自动识别转文字</p>
+                </div>
+                <div class="feature-item">
+                    <h4>💬 多轮对话</h4>
+                    <p>支持连续对话，保持上下文关联</p>
+                </div>
+                <div class="feature-item">
+                    <h4>💾 历史保存</h4>
+                    <p>对话历史自动保存到数据库</p>
+                </div>
+                <div class="feature-item">
+                    <h4>📥 记录导出</h4>
+                    <p>支持导出对话记录为文本文件</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 角色训练 -->
+        <div class="guide-section">
+            <h2>🎭 角色训练</h2>
+            <p>上传视频文件训练新的角色模型，用于后续的视频生成。</p>
+            
+            <h3>主要功能：</h3>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <h4>📹 视频上传</h4>
+                    <p>上传训练用的视频文件</p>
+                </div>
+                <div class="feature-item">
+                    <h4>✏️ 角色命名</h4>
+                    <p>支持角色名称个性化设置</p>
+                </div>
+                <div class="feature-item">
+                    <h4>⚙️ 高级参数</h4>
+                    <p>选择 FFHQ 对齐和高级参数调整</p>
+                </div>
+                <div class="feature-item">
+                    <h4>📊 进度显示</h4>
+                    <p>实时显示训练进度和状态</p>
+                </div>
+                <div class="feature-item">
+                    <h4>✅ 模型生成</h4>
+                    <p>自动提取训练数据并生成模型</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 后端显示屏 -->
+        <div class="guide-section">
+            <h2>📺 后端显示屏</h2>
+            <p>实时查看系统后端运行日志和状态信息。</p>
+            
+            <h3>主要功能：</h3>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <h4>🔄 自动滚动</h4>
+                    <p>日志自动滚动到最新内容</p>
+                </div>
+                <div class="feature-item">
+                    <h4>🔍 过滤功能</h4>
+                    <p>支持按关键字过滤日志内容</p>
+                </div>
+                <div class="feature-item">
+                    <h4>🗑️ 清空功能</h4>
+                    <p>一键清空日志显示内容</p>
+                </div>
+                <div class="feature-item">
+                    <h4>📊 实时更新</h4>
+                    <p>实时显示系统运行状态</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据库显示屏 -->
+        <div class="guide-section">
+            <h2>💾 数据库显示屏</h2>
+            <p>查看和管理系统数据库内容，支持多数据库操作。</p>
+            
+            <h3>主要功能：</h3>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <h4>🗄️ 数据库选择</h4>
+                    <p>支持选择不同的数据库进行查看</p>
+                </div>
+                <div class="feature-item">
+                    <h4>🔄 刷新功能</h4>
+                    <p>支持手动刷新数据库内容</p>
+                </div>
+                <div class="feature-item">
+                    <h4>✏️ 内容编辑</h4>
+                    <p>支持编辑数据库记录内容</p>
+                </div>
+                <div class="feature-item">
+                    <h4>🗑️ 记录删除</h4>
+                    <p>支持删除数据库中的记录</p>
+                </div>
+                <div class="feature-item">
+                    <h4>💾 保存编辑</h4>
+                    <p>编辑内容自动保存到数据库</p>
+                </div>
+                <div class="feature-item">
+                    <h4>📊 数据展示</h4>
+                    <p>以表格形式展示数据库内容</p>
+                </div>
+            </div>
+        </div>
+
+        <a href="start.html" class="back-button">← 返回首页</a>
+    </div>
+
+    <script>
+        // 应用设置（如果需要）
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                if (typeof fetchSettings === 'function') {
+                    const settings = await fetchSettings();
+                    // 导览页面不需要应用主题设置，使用固定的天蓝色主题
+                }
+            } catch (error) {
+                console.error('加载设置失败:', error);
+            }
+        });
+    </script>
+</body>
+
+</html>
+

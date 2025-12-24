@@ -1,0 +1,2133 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>视频生成 - NeRFFaceSpeech</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="settings.js"></script>
+    <script src="api.js"></script>
+    <style>
+        :root {
+        --primary: #1e40af;
+        --primary-2: #3b82f6;
+        --bg: #0b1020;
+        --card: rgba(255, 255, 255, 0.06);
+        --border: rgba(255, 255, 255, 0.14);
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+        --g1: rgba(59, 130, 246, 0.16);
+        --g2: rgba(14, 165, 233, 0.14);
+        --g3: rgba(56, 189, 248, 0.12);
+        --card-bg: rgb(24, 66, 134);
+        --base-font-size: 14px;
+        }
+
+        body.theme-tech {
+        --primary: #1e40af;
+        --primary-2: #3b82f6;
+        --bg: #0b1020;
+        --card: rgba(255, 255, 255, 0.06);
+        --border: rgba(255, 255, 255, 0.14);
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+        --g1: rgba(59, 130, 246, 0.16);
+        --g2: rgba(14, 165, 233, 0.14);
+        --g3: rgba(56, 189, 248, 0.12);
+        --card-bg: rgb(24, 66, 134);
+        }
+
+        body.theme-warm {
+            --primary: #f97316;
+            --primary-2: #ea580c;
+            --bg: #fff8f0;
+            --card: rgba(255, 255, 255, 0.9);
+            --border: rgba(249, 115, 22, 0.2);
+            --text: #1f2937;
+            --muted: #6b7280;
+            --g1: rgba(251, 191, 36, 0.15);
+            --g2: rgba(249, 115, 22, 0.12);
+            --g3: rgba(234, 88, 12, 0.1);
+            --card-bg: rgba(251, 191, 36, 0.15);
+        }
+
+        body.theme-minimal {
+            --primary: #6b7280;
+            --primary-2: #4b5563;
+            --bg: #f5f5f5;
+            --card: #ffffff;
+            --border: #e5e7eb;
+            --text: #111827;
+            --muted: #6b7280;
+            --g1: rgba(107, 114, 128, 0.08);
+            --g2: rgba(75, 85, 99, 0.07);
+            --g3: rgba(156, 163, 175, 0.06);
+            --card-bg: rgba(107, 114, 128, 0.1);
+        }
+
+        html {
+            font-size: var(--base-font-size);
+        }
+
+        body {
+            margin: 0;
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at 20% 20%, var(--g1), transparent 25%),
+                radial-gradient(circle at 80% 30%, var(--g2), transparent 25%),
+                radial-gradient(circle at 50% 80%, var(--g3), transparent 22%),
+                var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        .page {
+            max-width: 1400px;
+            width: 94vw;
+            margin: 0 auto;
+            padding: 20px 24px 40px;
+            min-height: 96vh;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 0.4px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border);
+            color: var(--text);
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--primary-2);
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 520px 1fr;
+            gap: 18px;
+            align-items: start;
+        }
+
+        @media (max-width: 1200px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        label {
+            font-weight: 700;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 15px;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text);
+            outline: none;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+
+        select {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 15px;
+            background: var(--card-bg);
+            color: var(--text);
+            outline: none;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: rgba(96, 165, 250, 0.8);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+        }
+
+        textarea {
+            min-height: 130px;
+            resize: vertical;
+        }
+
+        button.primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-2));
+            border: 1px solid var(--primary-2);
+            color: #fff;
+            font-weight: 700;
+            border-radius: 12px;
+            padding: 12px 14px;
+            cursor: pointer;
+            width: 100%;
+            transition: opacity 0.2s ease;
+        }
+
+        button.primary:hover:not(:disabled) {
+            opacity: 0.9;
+        }
+
+        button.secondary {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-weight: 600;
+            border-radius: 12px;
+            padding: 12px 14px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .status-box {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 12px;
+            border-radius: 12px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            min-height: 60px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-size: 13px;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .video-container video {
+            width: 100%;
+            display: block;
+        }
+
+        .video-placeholder {
+            width: 100%;
+            aspect-ratio: 16/9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--muted);
+            font-size: 16px;
+            border-radius: 12px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .progress-container {
+            margin-top: 12px;
+            margin-bottom: 12px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--primary-2));
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .progress-text {
+            font-size: 13px;
+            color: var(--muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .video-controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .video-controls button {
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 12px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-group button {
+            flex: 1;
+        }
+
+        /* 设置按钮 */
+        .settings-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .settings-btn:hover {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        /* 侧边栏遮罩 */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 2000;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: var(--bg);
+            border-left: 1px solid var(--border);
+            z-index: 2001;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar.active {
+            right: 0;
+        }
+
+        .sidebar-content {
+            padding: 24px;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 20px;
+            color: var(--text);
+        }
+
+        .sidebar-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 0;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-close:hover {
+            background: var(--card-bg);
+            color: var(--text);
+        }
+
+        /* 分页标签 */
+        .sidebar-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--muted);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .sidebar-tab:hover {
+            color: var(--text);
+        }
+
+        /* 分页内容 */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* 选项网格 */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .option-card {
+            padding: 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: var(--card-bg);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .option-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .option-card.selected {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .option-card.selected .option-name {
+            color: #fff;
+        }
+
+        .option-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .option-desc {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .option-card.selected .option-desc {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* 字号选择 */
+        .font-size-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .font-size-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: var(--card-bg);
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .font-size-btn:hover {
+            border-color: var(--primary);
+        }
+
+        .font-size-btn.selected {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .font-size-custom {
+            margin-top: 16px;
+        }
+
+        .font-size-custom input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--card-bg);
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        /* 历史记录侧边栏 */
+        .history-sidebar {
+            position: fixed;
+            left: -320px;
+            top: 0;
+            width: 320px;
+            height: 100vh;
+            background: var(--bg);
+            border-right: 1px solid var(--border);
+            z-index: 1500;
+            transition: left 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .history-sidebar.active {
+            left: 0;
+        }
+
+        .history-sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-sidebar-header h3 {
+            margin: 0;
+            font-size: 18px;
+            color: var(--text);
+        }
+
+        .history-sidebar-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .history-sidebar-close:hover {
+            background: var(--card-bg);
+            color: var(--text);
+        }
+
+        .history-sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .history-list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .history-item {
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .history-item:hover {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        .history-item.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        .history-item-text {
+            font-weight: 500;
+            margin-bottom: 4px;
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .history-item-time {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
+        .history-sidebar-actions {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .back-to-task-btn {
+            width: 100%;
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--primary);
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .back-to-task-btn:hover {
+            background: var(--primary-2);
+            border-color: var(--primary-2);
+        }
+
+        .back-to-task-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                right: -100%;
+            }
+
+            .history-sidebar {
+                width: 100%;
+                left: -100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <button class="settings-btn" id="settingsBtn">⚙️ 设置</button>
+
+    <!-- 历史记录侧边栏 -->
+    <div class="history-sidebar" id="historySidebar">
+        <div class="history-sidebar-header">
+            <h3>历史记录</h3>
+            <button class="history-sidebar-close" id="historySidebarClose">×</button>
+        </div>
+        <div class="history-sidebar-content">
+            <div class="history-list-container" id="historyListContainer">
+                <div style="color: var(--muted); text-align: center; padding: 20px;">加载中...</div>
+            </div>
+        </div>
+        <div class="history-sidebar-actions">
+            <button class="back-to-task-btn" id="backToTaskBtn">🚀 开始新任务</button>
+        </div>
+    </div>
+
+    <!-- 侧边栏遮罩 -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- 设置侧边栏 -->
+    <div class="sidebar" id="settingsSidebar">
+        <div class="sidebar-content">
+            <div class="sidebar-header">
+                <h2>设置</h2>
+                <button class="sidebar-close" id="sidebarClose">×</button>
+            </div>
+
+            <div class="sidebar-tabs">
+                <button class="sidebar-tab active" data-tab="theme">主题</button>
+                <button class="sidebar-tab" data-tab="font">字体</button>
+            </div>
+
+            <!-- 主题设置 -->
+            <div class="tab-content active" id="themeTab">
+                <div class="options-grid">
+                    <div class="option-card" data-theme="tech">
+                        <div class="option-name">科技风</div>
+                        <div class="option-desc">深蓝色科技感</div>
+                    </div>
+                    <div class="option-card" data-theme="warm">
+                        <div class="option-name">温馨风</div>
+                        <div class="option-desc">暖色调温馨</div>
+                    </div>
+                    <div class="option-card" data-theme="minimal">
+                        <div class="option-name">简约风</div>
+                        <div class="option-desc">灰色简约</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 字体设置 -->
+            <div class="tab-content" id="fontTab">
+                <div style="margin-bottom: 16px;">
+                    <label
+                        style="display: block; margin-bottom: 8px; color: var(--text); font-weight: 500;">字体样式</label>
+                    <div class="options-grid">
+                        <div class="option-card" data-font="SimSun">
+                            <div class="option-name">宋体</div>
+                            <div class="option-desc">SimSun</div>
+                        </div>
+                        <div class="option-card" data-font="SimHei">
+                            <div class="option-name">黑体</div>
+                            <div class="option-desc">SimHei</div>
+                        </div>
+                        <div class="option-card" data-font="Microsoft YaHei">
+                            <div class="option-name">微软雅黑</div>
+                            <div class="option-desc">Microsoft YaHei</div>
+                        </div>
+                        <div class="option-card" data-font="Arial">
+                            <div class="option-name">Arial</div>
+                            <div class="option-desc">Arial</div>
+                        </div>
+                        <div class="option-card" data-font="Times New Roman">
+                            <div class="option-name">Times New Roman</div>
+                            <div class="option-desc">Times New Roman</div>
+                        </div>
+                        <div class="option-card" data-font="Inter">
+                            <div class="option-name">Inter</div>
+                            <div class="option-desc">Inter（默认）</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label
+                        style="display: block; margin-bottom: 8px; color: var(--text); font-weight: 500;">字号大小</label>
+                    <div class="font-size-group">
+                        <button class="font-size-btn" data-size="small">小</button>
+                        <button class="font-size-btn" data-size="medium">中</button>
+                        <button class="font-size-btn" data-size="large">大</button>
+                        <button class="font-size-btn" data-size="custom">自定义</button>
+                    </div>
+                    <div class="font-size-custom" id="customSizeInput" style="display: none;">
+                        <input type="number" id="customSizeValue" placeholder="输入字号（px）" min="10" max="24" value="14">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="page">
+        <header>
+            <a href="index.html" class="back-btn">← 返回首页</a>
+            <h1>🎬 视频生成</h1>
+            <button class="back-btn" id="historyBtn" style="margin: 0;">📋 历史记录</button>
+        </header>
+
+        <div class="grid">
+            <!-- 左侧：输入区域 -->
+            <div>
+                <div class="card">
+                    <label for="textInput">输入文本</label>
+                    <textarea id="textInput" placeholder="输入要生成的文本内容..."></textarea>
+                    <div class="muted" style="margin-top: 6px;">输入你想要生成的文本内容</div>
+
+                    <label for="characterInput" style="margin-top: 18px;">角色</label>
+                    <div class="btn-group" style="margin-bottom: 8px;">
+                        <select id="characterInput">
+                            <option value="">加载中...</option>
+                        </select>
+                        <button class="secondary" id="refreshCharacterBtn" onclick="loadCharacters()">🔄</button>
+                    </div>
+
+                    <label for="modelSelect" style="margin-top: 18px;">模型</label>
+                    <div class="btn-group" style="margin-bottom: 8px;">
+                        <select id="modelSelect">
+                            <option value="">加载中...</option>
+                        </select>
+                        <button class="secondary" id="refreshBtn" onclick="loadModels()">🔄</button>
+                    </div>
+
+                    <button class="primary" id="generateBtn" onclick="startGeneration()">🚀 开始生成视频</button>
+                    <button class="secondary" id="cancelBtn" onclick="cancelGeneration()"
+                        style="display: none; margin-top: 8px;">❌ 终止任务</button>
+
+                    <div class="progress-container" id="progressContainer" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span id="progressText">准备中...</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                    </div>
+
+                    <div class="status-box" id="statusBox" style="margin-top: 12px;">等待开始...</div>
+                </div>
+            </div>
+
+            <!-- 右侧：视频显示区域 -->
+            <div>
+                <div class="card">
+                    <div class="video-placeholder" id="videoPlaceholder">
+                        等待生成视频...
+                    </div>
+
+                    <div class="video-container hidden" id="videoContainer">
+                        <video id="videoOutput" controls></video>
+                    </div>
+
+                    <div class="video-controls" id="videoControls" style="display: none; margin-top: 12px;">
+                        <button class="secondary" onclick="downloadVideo()">📥 下载视频</button>
+                        <button class="secondary" onclick="fullscreenVideo()">🔍 全屏</button>
+                    </div>
+
+                    <div id="videoInfo" style="display: none; margin-top: 12px; font-size: 13px; color: var(--muted);">
+                        <div>生成时间: <span id="generationTime">-</span></div>
+                        <div>任务ID: <span id="taskId">-</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTaskId = null;
+        let statusPollInterval = null;
+        let currentViewMode = 'task'; // 'task' 或 'history'
+        let viewingHistoryId = null; // 当前查看的历史记录ID
+        let savedTaskState = null; // 保存的当前任务状态
+
+        // ==================== 历史记录功能 ====================
+        const historyBtn = document.getElementById("historyBtn");
+        const historySidebar = document.getElementById("historySidebar");
+        const historySidebarClose = document.getElementById("historySidebarClose");
+        const historyListContainer = document.getElementById("historyListContainer");
+        const backToTaskBtn = document.getElementById("backToTaskBtn");
+
+        // 打开/关闭历史记录侧边栏
+        if (historyBtn && historySidebar) {
+            historyBtn.addEventListener("click", () => {
+                historySidebar.classList.toggle("active");
+                if (historySidebar.classList.contains("active")) {
+                    loadHistoryList();
+                }
+            });
+        }
+
+        if (historySidebarClose) {
+            historySidebarClose.addEventListener("click", () => {
+                historySidebar.classList.remove("active");
+            });
+        }
+
+        // 加载历史记录列表
+        async function loadHistoryList() {
+            try {
+                historyListContainer.innerHTML = '<div style="color: var(--muted); text-align: center; padding: 20px;">加载中...</div>';
+                const apiUrl = getApiBaseUrl();
+                const response = await fetch(`${apiUrl}/generation_records?record_type=video&limit=100`, {
+                    signal: AbortSignal.timeout(5000)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (!data.success || !data.data || data.data.length === 0) {
+                    historyListContainer.innerHTML = '<div style="color: var(--muted); text-align: center; padding: 20px;">暂无历史记录</div>';
+                    return;
+                }
+
+                const records = data.data;
+                historyListContainer.innerHTML = '';
+
+                // 对于每个记录，检查是否是运行中的任务
+                const checkTasks = records.map(async (record) => {
+                    const item = document.createElement("div");
+                    const isActive = viewingHistoryId === record.unique_id;
+                    
+                    // 检查是否是当前运行中的任务（通过查询任务状态）
+                    let isCurrentTask = false;
+                    let taskStatus = null;
+                    const recordTaskId = record.unique_id;
+                    
+                    // 如果这个记录的任务ID匹配当前任务ID或保存的任务ID，查询状态
+                    if (currentTaskId === recordTaskId || savedTaskState?.taskId === recordTaskId) {
+                        try {
+                            // 快速查询任务状态
+                            const statusResponse = await getVideoGenerationStatus(recordTaskId);
+                            if (statusResponse.success && statusResponse.data) {
+                                taskStatus = statusResponse.data.status;
+                                if (taskStatus === 'pending' || taskStatus === 'running') {
+                                    isCurrentTask = true;
+                                    // 更新 currentTaskId 和 savedTaskState（如果还没有设置）
+                                    if (!currentTaskId) {
+                                        currentTaskId = recordTaskId;
+                                    }
+                                    if (!savedTaskState) {
+                                        savedTaskState = {
+                                            taskId: recordTaskId,
+                                            text: record.text || '',
+                                            character: record.character || '',
+                                            model: record.model_name || '',
+                                            statusPollInterval: false,
+                                            taskStartTime: statusResponse.data.start_time || null
+                                        };
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            // 查询失败，忽略（可能是任务已完成或不存在）
+                            console.log('查询任务状态失败:', e);
+                        }
+                    }
+                    
+                    item.className = `history-item ${isActive || isCurrentTask ? 'active' : ''}`;
+                    item.dataset.id = recordTaskId;
+
+                    const textDiv = document.createElement("div");
+                    textDiv.className = "history-item-text";
+                    const textPreview = (record.text || '无文本').substring(0, 30) + ((record.text && record.text.length > 30) ? '...' : '');
+                    textDiv.textContent = textPreview;
+
+                    const timeDiv = document.createElement("div");
+                    timeDiv.className = "history-item-time";
+                    let timeText = '';
+                    if (isCurrentTask && (taskStatus === 'pending' || taskStatus === 'running')) {
+                        timeText = '生成中...';
+                    } else {
+                    const date = record.created_at ? new Date(record.created_at).toLocaleString('zh-CN') : '未知时间';
+                        timeText = date;
+                    }
+                    timeDiv.textContent = timeText;
+
+                    item.appendChild(textDiv);
+                    item.appendChild(timeDiv);
+
+                    item.addEventListener("click", () => {
+                        // 如果是运行中的任务，返回任务界面；否则查看历史记录
+                        if (isCurrentTask) {
+                            backToCurrentTask();
+                        } else {
+                            switchToHistoryRecord(recordTaskId);
+                        }
+                    });
+
+                    return item;
+                });
+                
+                // 等待所有任务状态查询完成后再添加到DOM
+                const items = await Promise.all(checkTasks);
+                items.forEach(item => {
+                    historyListContainer.appendChild(item);
+                });
+                
+                // 更新按钮状态（可能在查询过程中发现了运行中的任务）
+                updateBackToTaskButton();
+            } catch (error) {
+                console.error('加载历史记录失败:', error);
+                historyListContainer.innerHTML = '<div style="color: var(--muted); text-align: center; padding: 20px;">加载失败</div>';
+            }
+        }
+
+        // 切换到历史记录视图
+        async function switchToHistoryRecord(recordId) {
+            try {
+                // 保存当前任务状态
+                if (currentViewMode === 'task' && currentTaskId) {
+                    savedTaskState = {
+                        taskId: currentTaskId,
+                        text: document.getElementById('textInput').value,
+                        character: document.getElementById('characterInput').value,
+                        model: document.getElementById('modelSelect').value,
+                        statusPollInterval: statusPollInterval ? true : false
+                    };
+                }
+
+                // 禁用输入
+                setInputsDisabled(true);
+                document.getElementById('generateBtn').style.display = 'none';
+                document.getElementById('cancelBtn').style.display = 'none';
+                document.getElementById('progressContainer').style.display = 'none';
+
+                // 加载历史记录详情
+                const apiUrl = getApiBaseUrl();
+                const response = await fetch(`${apiUrl}/generation_records/${recordId}`, {
+                    signal: AbortSignal.timeout(5000)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (!data.success || !data.data) {
+                    throw new Error(data.error || '记录不存在');
+                }
+
+                const record = data.data;
+                viewingHistoryId = recordId;
+                currentViewMode = 'history';
+
+                // 设置输入框值（只读）
+                document.getElementById('textInput').value = record.text || '';
+                document.getElementById('characterInput').value = record.character || '';
+                document.getElementById('modelSelect').value = record.model_name || '';
+
+                // 显示视频
+                if (record.video_path) {
+                    // 从路径中提取文件名（例如：从 /root/.../videos/xxx.mp4 提取 xxx.mp4）
+                    const pathParts = record.video_path.replace(/\\/g, '/').split('/');
+                    const fileName = pathParts[pathParts.length - 1];
+                    if (fileName && fileName.endsWith('.mp4')) {
+                        const videoUrl = `${apiUrl}/videos/${fileName}`;
+                        displayVideo(videoUrl, {
+                            generation_time: record.generation_time,
+                            unique_id: record.unique_id
+                        });
+                    } else {
+                        console.error('无法从路径提取文件名:', record.video_path);
+                        document.getElementById('videoContainer').classList.add('hidden');
+                        document.getElementById('videoPlaceholder').classList.remove('hidden');
+                        document.getElementById('videoPlaceholder').textContent = '视频路径无效';
+                    }
+                } else {
+                    document.getElementById('videoContainer').classList.add('hidden');
+                    document.getElementById('videoPlaceholder').classList.remove('hidden');
+                    document.getElementById('videoPlaceholder').textContent = '该记录没有视频';
+                }
+
+                updateStatus(`📋 历史记录 - ${new Date(record.created_at).toLocaleString('zh-CN')}`);
+                
+                // 更新按钮状态
+                updateBackToTaskButton();
+
+                // 更新历史列表高亮
+                loadHistoryList();
+
+                // 关闭侧边栏
+                historySidebar.classList.remove("active");
+            } catch (error) {
+                console.error('加载历史记录失败:', error);
+                showToast('加载历史记录失败: ' + error.message, 'error');
+            }
+        }
+
+        // 返回当前任务
+        async function backToCurrentTask() {
+            // 首先检查是否有保存的任务状态
+            if (savedTaskState && savedTaskState.taskId) {
+                // 恢复任务状态
+                currentViewMode = 'task';
+                viewingHistoryId = null;
+
+                // 恢复输入框值
+                document.getElementById('textInput').value = savedTaskState.text || '';
+                document.getElementById('characterInput').value = savedTaskState.character || '';
+                document.getElementById('modelSelect').value = savedTaskState.model || '';
+
+                // 恢复任务ID
+                currentTaskId = savedTaskState.taskId;
+
+                // 清空视频显示（任务还在运行中，不应该显示旧的视频）
+                document.getElementById('videoContainer').classList.add('hidden');
+                document.getElementById('videoPlaceholder').classList.remove('hidden');
+                document.getElementById('videoPlaceholder').textContent = '等待生成视频...';
+                document.getElementById('videoControls').style.display = 'none';
+                document.getElementById('videoInfo').style.display = 'none';
+
+                // 禁用输入（不支持修改）
+                setInputsDisabled(true);
+                document.getElementById('generateBtn').style.display = 'none';
+                document.getElementById('cancelBtn').style.display = 'block';
+                document.getElementById('progressContainer').style.display = 'block';
+
+                // 先查询当前任务状态，同步进度条
+                try {
+                    const response = await getVideoGenerationStatus(currentTaskId);
+                    if (response.success && response.data) {
+                        const task = response.data;
+                        const status = task.status;
+                        
+                        // 根据任务状态更新UI
+                        if (status === 'pending') {
+                            updateProgress(10, '任务排队中...');
+                            updateStatus('📋 任务排队中...');
+                        } else if (status === 'running') {
+                            // 计算进度
+                            let progress = 30;
+                            if (task.start_time) {
+                                try {
+                                    const startTime = new Date(task.start_time).getTime();
+                                    const elapsedSeconds = (Date.now() - startTime) / 1000;
+                                    if (elapsedSeconds <= 30) {
+                                        progress = 30 + Math.floor((elapsedSeconds / 30) * 10);
+                                    } else if (elapsedSeconds <= 90) {
+                                        progress = 40 + Math.floor(((elapsedSeconds - 30) / 60) * 10);
+                                    } else if (elapsedSeconds <= 150) {
+                                        progress = 50 + Math.floor(((elapsedSeconds - 90) / 60) * 10);
+                                    } else if (elapsedSeconds <= 210) {
+                                        progress = 60 + Math.floor(((elapsedSeconds - 150) / 60) * 10);
+                                    } else if (elapsedSeconds <= 270) {
+                                        progress = 70 + Math.floor(((elapsedSeconds - 210) / 60) * 10);
+                                    } else {
+                                        progress = Math.min(80 + Math.floor(((elapsedSeconds - 270) / 60) * 10), 90);
+                                    }
+                                } catch (e) {
+                                    console.warn('无法解析任务开始时间:', e);
+                                }
+                            }
+                            updateProgress(progress, '生成中...');
+                            updateStatus('📋 任务生成中...');
+                        } else if (status === 'completed') {
+                            // 任务已完成，显示视频
+                            updateProgress(100, '生成完成！');
+                            updateStatus('✅ 视频生成成功！');
+                            const videoUrl = `${getApiBaseUrl()}/videos/${currentTaskId}.mp4`;
+                            displayVideo(videoUrl, task);
+                            // 任务完成，清除保存的状态
+                            savedTaskState = null;
+                            setInputsDisabled(false);
+                            document.getElementById('generateBtn').style.display = 'block';
+                            document.getElementById('cancelBtn').style.display = 'none';
+                            document.getElementById('progressContainer').style.display = 'none';
+                        } else if (status === 'failed' || status === 'cancelled') {
+                            // 任务失败或已取消
+                            const error = task.error || (status === 'cancelled' ? '任务已取消' : '未知错误');
+                            updateStatus(`❌ ${status === 'cancelled' ? '任务已取消' : '生成失败'}: ${error}`);
+                            // 任务失败，清除保存的状态
+                            savedTaskState = null;
+                            setInputsDisabled(false);
+                            document.getElementById('generateBtn').style.display = 'block';
+                            document.getElementById('cancelBtn').style.display = 'none';
+                            document.getElementById('progressContainer').style.display = 'none';
+                        }
+                    }
+                } catch (error) {
+                    console.error('查询任务状态失败:', error);
+                    updateStatus('📋 正在恢复任务状态...');
+                }
+
+                // 重新开始状态轮询（准备接受任务返回）
+                startStatusPolling(currentTaskId, savedTaskState.taskStartTime);
+
+                // 更新按钮状态
+                updateBackToTaskButton();
+
+                // 更新历史列表
+                loadHistoryList();
+
+                // 关闭侧边栏
+                historySidebar.classList.remove("active");
+
+                showToast('已返回当前任务', 'info');
+                return;
+            }
+
+            // 如果没有保存的任务状态，检查是否有正在运行的任务
+            await checkRunningTask();
+            
+            // 如果checkRunningTask恢复了任务（设置了savedTaskState），说明有正在运行的任务
+            if (savedTaskState && savedTaskState.taskId) {
+                // 任务已经被checkRunningTask恢复了，更新按钮状态并关闭侧边栏
+                updateBackToTaskButton();
+                historySidebar.classList.remove("active");
+                showToast('已返回当前任务', 'info');
+                return;
+            }
+
+            // 如果没有正在运行的任务，显示可以开始新任务的页面
+            currentViewMode = 'task';
+            viewingHistoryId = null;
+            
+            // 清空输入框（可选，也可以保留历史记录的输入）
+            // document.getElementById('textInput').value = '';
+            
+            // 启用所有输入框
+            setInputsDisabled(false);
+            document.getElementById('generateBtn').style.display = 'block';
+            document.getElementById('cancelBtn').style.display = 'none';
+            document.getElementById('progressContainer').style.display = 'none';
+
+            // 重置视频显示
+            document.getElementById('videoContainer').classList.add('hidden');
+            document.getElementById('videoPlaceholder').classList.remove('hidden');
+            document.getElementById('videoPlaceholder').textContent = '等待生成视频...';
+            document.getElementById('videoControls').style.display = 'none';
+            document.getElementById('videoInfo').style.display = 'none';
+
+            // 更新状态
+            updateStatus('等待开始...');
+
+            // 清除任务状态（因为没有任务）
+            savedTaskState = null;
+            currentTaskId = null;
+            
+            // 更新按钮状态（显示"开始新任务"）
+            updateBackToTaskButton();
+
+            // 更新历史列表
+            loadHistoryList();
+
+            // 关闭侧边栏
+            historySidebar.classList.remove("active");
+
+            showToast('当前没有正在执行的任务，可以开始新任务', 'info');
+        }
+
+        // 更新按钮状态（根据是否有任务显示不同的文本）
+        function updateBackToTaskButton() {
+            if (!backToTaskBtn) return;
+            
+            const hasTask = savedTaskState && savedTaskState.taskId;
+            if (hasTask) {
+                backToTaskBtn.textContent = '← 返回当前任务';
+                backToTaskBtn.disabled = false;
+            } else {
+                backToTaskBtn.textContent = '🚀 开始新任务';
+                backToTaskBtn.disabled = false;
+            }
+        }
+
+        if (backToTaskBtn) {
+            backToTaskBtn.addEventListener("click", () => {
+                const hasTask = savedTaskState && savedTaskState.taskId;
+                if (hasTask) {
+                    // 有任务，返回当前任务
+                    backToCurrentTask();
+                } else {
+                    // 没有任务，开始新任务 - 清空所有配置并等待用户填写
+                    currentViewMode = 'task';
+                    viewingHistoryId = null;
+                    historySidebar.classList.remove("active");
+                    
+                    // 清空所有输入框
+                    document.getElementById('textInput').value = '';
+                    document.getElementById('characterInput').value = '';
+                    document.getElementById('modelSelect').value = '';
+                    
+                    // 启用所有输入框
+                    setInputsDisabled(false);
+                    document.getElementById('generateBtn').style.display = 'block';
+                    document.getElementById('cancelBtn').style.display = 'none';
+                    document.getElementById('progressContainer').style.display = 'none';
+                    
+                    // 重置视频显示
+                    document.getElementById('videoContainer').classList.add('hidden');
+                    document.getElementById('videoPlaceholder').classList.remove('hidden');
+                    document.getElementById('videoPlaceholder').textContent = '等待生成视频...';
+                    document.getElementById('videoControls').style.display = 'none';
+                    document.getElementById('videoInfo').style.display = 'none';
+                    
+                    // 更新状态
+                    updateStatus('等待开始...');
+                    
+                    // 清除任务状态
+                    savedTaskState = null;
+                    currentTaskId = null;
+                    
+                    // 更新按钮状态
+                    updateBackToTaskButton();
+                    
+                    // 不调用 startGeneration()，等待用户填写后点击"开始生成视频"按钮
+                }
+            });
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 应用设置（从数据库读取）
+            try {
+                const settings = await fetchSettings();
+                await Promise.all([
+                    applySettingsOnly(settings),
+                    updateThemeSelection(settings),
+                    updateFontSelection(settings),
+                    updateFontSizeSelection(settings)
+                ]);
+            } catch (error) {
+                console.error('应用设置失败:', error);
+            }
+
+            // 设置侧边栏控制
+            const settingsBtn = document.getElementById('settingsBtn');
+            const settingsSidebar = document.getElementById('settingsSidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const sidebarClose = document.getElementById('sidebarClose');
+
+            if (settingsBtn && settingsSidebar) {
+                const openSidebar = () => {
+                    settingsSidebar.classList.add('active');
+                    sidebarOverlay.classList.add('active');
+                };
+
+                const closeSidebar = () => {
+                    settingsSidebar.classList.remove('active');
+                    sidebarOverlay.classList.remove('active');
+                };
+
+                settingsBtn.addEventListener('click', openSidebar);
+                if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
+                if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+
+                // 标签切换
+                document.querySelectorAll('.sidebar-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        const targetTab = tab.dataset.tab;
+                        document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+                        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                        tab.classList.add('active');
+                        const targetContent = document.getElementById(targetTab + 'Tab');
+                        if (targetContent) targetContent.classList.add('active');
+                    });
+                });
+
+                // 主题选择
+                document.querySelectorAll('[data-theme]').forEach(card => {
+                    card.addEventListener('click', () => {
+                        applyTheme(card.dataset.theme);
+                    });
+                });
+
+                // 字体选择
+                document.querySelectorAll('[data-font]').forEach(card => {
+                    card.addEventListener('click', () => {
+                        applyFont(card.dataset.font);
+                    });
+                });
+
+                // 字号选择
+                document.querySelectorAll('[data-size]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        if (btn.dataset.size === 'custom') {
+                            const customInput = document.getElementById('customSizeInput');
+                            if (customInput) customInput.style.display = 'block';
+                        } else {
+                            const customInput = document.getElementById('customSizeInput');
+                            if (customInput) customInput.style.display = 'none';
+                            applyFontSize(btn.dataset.size);
+                        }
+                    });
+                });
+
+                // 自定义字号输入
+                const customSizeInput = document.getElementById('customSizeValue');
+                if (customSizeInput) {
+                    customSizeInput.addEventListener('change', () => {
+                        applyFontSize('custom');
+                    });
+                }
+            }
+
+            // 先加载角色和模型列表
+            await Promise.all([loadCharacters(), loadModels()]);
+            
+            // 检查 URL 参数，如果是 mode=new，则清空配置并跳过任务检查
+            const urlParams = new URLSearchParams(window.location.search);
+            const mode = urlParams.get('mode');
+            
+            if (mode === 'new') {
+                // 新任务模式：清空所有配置
+                document.getElementById('textInput').value = '';
+                document.getElementById('characterInput').value = '';
+                document.getElementById('modelSelect').value = '';
+                
+                // 重置UI状态
+                setInputsDisabled(false);
+                document.getElementById('generateBtn').style.display = 'block';
+                document.getElementById('cancelBtn').style.display = 'none';
+                document.getElementById('progressContainer').style.display = 'none';
+                
+                // 重置视频显示
+                document.getElementById('videoContainer').classList.add('hidden');
+                document.getElementById('videoPlaceholder').classList.remove('hidden');
+                document.getElementById('videoPlaceholder').textContent = '等待生成视频...';
+                document.getElementById('videoControls').style.display = 'none';
+                document.getElementById('videoInfo').style.display = 'none';
+                
+                // 更新状态
+                updateStatus('等待开始...');
+                
+                // 清除任务状态
+                savedTaskState = null;
+                currentTaskId = null;
+                currentViewMode = 'task';
+                viewingHistoryId = null;
+                
+                // 更新按钮状态
+                updateBackToTaskButton();
+                
+                // 清除 URL 参数（可选，让 URL 更干净）
+                if (window.history.replaceState) {
+                    window.history.replaceState({}, '', 'generate.html');
+                }
+            } else {
+                // 正常模式：检查运行中的任务
+            await checkRunningTask();
+            }
+            
+            // 初始化按钮状态
+            updateBackToTaskButton();
+            
+            // 不再自动刷新历史记录列表，避免屏幕闪烁
+            // 只在用户打开侧边栏时加载一次，或用户手动刷新
+        });
+
+        // 加载角色列表（带超时处理）
+        async function loadCharacters() {
+            const select = document.getElementById('characterInput');
+            const refreshBtn = document.getElementById('refreshCharacterBtn');
+            const isUserRefresh = refreshBtn && refreshBtn.disabled === false; // 判断是否是用户主动刷新
+
+            try {
+                if (refreshBtn) refreshBtn.disabled = true;
+                select.innerHTML = '<option value="">加载中...</option>';
+
+                // api.js 中已经设置了 5 秒超时，这里直接调用即可
+                const characters = await getCharacters();
+
+                if (characters.length === 0) {
+                    select.innerHTML = '<option value="">未找到角色</option>';
+                    if (isUserRefresh) {
+                        showToast('未找到已训练的角色', 'warning');
+                    }
+                    return;
+                }
+
+                select.innerHTML = characters.map(c => `<option value="${c}">${c}</option>`).join('');
+                if (characters.length > 0) {
+                    select.value = characters[0];
+                }
+            } catch (error) {
+                console.error('加载角色失败:', error);
+                const errorMsg = error.message || '未知错误';
+
+                // 根据错误类型显示不同的提示
+                if (errorMsg.includes('超时') || errorMsg.includes('timeout') || errorMsg.includes('Failed to fetch')) {
+                    select.innerHTML = '<option value="">后端未连接</option>';
+                    if (isUserRefresh) {
+                        showToast('后端服务未启动或无法连接', 'error');
+                    } else {
+                        console.warn('后端服务可能未启动，页面已就绪，可以稍后重试');
+                    }
+                } else {
+                    select.innerHTML = '<option value="">加载失败</option>';
+                    if (isUserRefresh) {
+                        showToast('加载角色失败: ' + errorMsg, 'error');
+                    }
+                }
+            } finally {
+                if (refreshBtn) refreshBtn.disabled = false;
+            }
+        }
+
+        // 加载模型列表（带超时处理）
+        async function loadModels() {
+            const select = document.getElementById('modelSelect');
+            const refreshBtn = document.getElementById('refreshBtn');
+            const isUserRefresh = refreshBtn.disabled === false; // 判断是否是用户主动刷新
+
+            try {
+                refreshBtn.disabled = true;
+                select.innerHTML = '<option value="">加载中...</option>';
+
+                // api.js 中已经设置了 5 秒超时，这里直接调用即可
+                const models = await getModels();
+
+                if (models.length === 0) {
+                    select.innerHTML = '<option value="">未找到模型</option>';
+                    if (isUserRefresh) {
+                        showToast('未找到模型', 'error');
+                    }
+                    return;
+                }
+
+                select.innerHTML = models.map(m => `<option value="${m}">${m}</option>`).join('');
+                if (models.length > 0) {
+                    select.value = models[0];
+                }
+            } catch (error) {
+                console.error('加载模型失败:', error);
+                const errorMsg = error.message || '未知错误';
+
+                // 根据错误类型显示不同的提示
+                if (errorMsg.includes('超时') || errorMsg.includes('timeout') || errorMsg.includes('Failed to fetch')) {
+                    select.innerHTML = '<option value="">后端未连接</option>';
+                    if (isUserRefresh) {
+                        showToast('后端服务未启动或无法连接', 'error');
+                    } else {
+                        console.warn('后端服务可能未启动，页面已就绪，可以稍后重试');
+                    }
+                } else {
+                    select.innerHTML = '<option value="">加载失败</option>';
+                    if (isUserRefresh) {
+                        showToast('加载模型失败: ' + errorMsg, 'error');
+                    }
+                }
+            } finally {
+                refreshBtn.disabled = false;
+            }
+        }
+
+        // 检查是否有正在运行的任务（带超时处理）
+        async function checkRunningTask() {
+            try {
+                const apiUrl = getApiBaseUrl();
+
+                // api.js 中已经设置了超时，这里直接调用即可
+                const response = await fetch(`${apiUrl}/generate_video/running`, {
+                    signal: AbortSignal.timeout(3000) // 3秒超时
+                });
+
+                if (!response.ok) {
+                    return; // 如果响应不成功，静默失败
+                }
+
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    const task = data.data;
+                    const status = task.status;
+
+                    // 只恢复真正在运行中的任务（pending 或 running）
+                    // 如果任务已经完成或失败，不应该恢复
+                    if (status !== 'pending' && status !== 'running') {
+                        console.log(`检测到任务 ${task.unique_id}，但状态为 ${status}，不恢复`);
+                        return;
+                    }
+
+                    currentTaskId = task.unique_id;
+
+                    // 保存任务状态（用于历史记录切换）
+                    savedTaskState = {
+                        taskId: task.unique_id,
+                        text: task.text || '',
+                        character: task.character || 'ayanami',
+                        model: task.model_name || '',
+                        statusPollInterval: true
+                    };
+
+                    // 恢复UI状态
+                    document.getElementById('textInput').value = task.text || '';
+                    document.getElementById('characterInput').value = task.character || 'ayanami';
+                    document.getElementById('modelSelect').value = task.model_name || '';
+
+                    // 清空视频显示（任务还在运行中，不应该显示旧的视频）
+                    document.getElementById('videoContainer').classList.add('hidden');
+                    document.getElementById('videoPlaceholder').classList.remove('hidden');
+                    document.getElementById('videoPlaceholder').textContent = '等待生成视频...';
+                    document.getElementById('videoControls').style.display = 'none';
+                    document.getElementById('videoInfo').style.display = 'none';
+
+                    setInputsDisabled(true);
+                    document.getElementById('generateBtn').style.display = 'none';
+                    document.getElementById('cancelBtn').style.display = 'block';
+                    document.getElementById('progressContainer').style.display = 'block';
+
+                    // 根据任务开始时间计算初始进度
+                    let initialProgress = 10;
+                    if (task.start_time) {
+                        try {
+                            const startTime = new Date(task.start_time).getTime();
+                            const elapsedSeconds = (Date.now() - startTime) / 1000;
+
+                            // 如果任务已经运行了超过30分钟，不应该恢复（可能是异常任务）
+                            if (elapsedSeconds > 1800) {
+                                console.warn(`任务运行时间过长 (${Math.floor(elapsedSeconds / 60)} 分钟)，不恢复`);
+                                resetUI();
+                                return;
+                            }
+
+                            // 如果任务已经运行了一段时间，设置一个合理的初始进度
+                            if (elapsedSeconds > 30) {
+                                initialProgress = Math.min(40 + Math.floor((elapsedSeconds - 30) / 30) * 5, 90);
+                            } else {
+                                initialProgress = 30 + Math.floor((elapsedSeconds / 30) * 10);
+                            }
+                        } catch (e) {
+                            console.warn('无法解析任务开始时间:', e);
+                        }
+                    }
+                    updateProgress(initialProgress, '恢复任务中...');
+
+                    // 开始轮询状态
+                    startStatusPolling(currentTaskId, task.start_time);
+                    showToast('检测到正在运行的任务，已恢复', 'info');
+                    
+                    // 更新按钮状态
+                    updateBackToTaskButton();
+                } else {
+                    // 没有找到运行中的任务，更新按钮状态
+                    updateBackToTaskButton();
+                }
+            } catch (error) {
+                // 静默失败，不显示错误提示（因为可能是后端未启动）
+                // 只在控制台记录，不影响用户体验
+                if (error.name !== 'AbortError' && !error.message.includes('timeout')) {
+                    console.log('检查运行任务:', error.message || '后端服务可能未启动');
+                }
+                // 即使出错也更新按钮状态（显示"开始新任务"）
+                updateBackToTaskButton();
+            }
+        }
+
+        // 开始生成视频
+        async function startGeneration() {
+            const text = document.getElementById('textInput').value.trim();
+            const character = document.getElementById('characterInput').value;
+            const model = document.getElementById('modelSelect').value;
+
+            if (!text) {
+                showToast('请输入文本', 'error');
+                return;
+            }
+
+            if (!model) {
+                showToast('请选择模型', 'error');
+                return;
+            }
+
+            // 禁用输入
+            setInputsDisabled(true);
+            document.getElementById('generateBtn').style.display = 'none';
+            document.getElementById('cancelBtn').style.display = 'block';
+            document.getElementById('progressContainer').style.display = 'block';
+
+            // 重置UI
+            document.getElementById('videoContainer').classList.add('hidden');
+            document.getElementById('videoPlaceholder').classList.remove('hidden');
+            document.getElementById('videoPlaceholder').textContent = '等待生成视频...';
+            document.getElementById('videoControls').style.display = 'none';
+            document.getElementById('videoInfo').style.display = 'none';
+            updateStatus('📋 提交任务中...');
+            updateProgress(0, '提交任务...');
+
+            try {
+                // 提交任务
+                const result = await generateVideo({
+                    text: text,
+                    character: character,
+                    model_name: model
+                });
+
+                if (!result.success) {
+                    throw new Error(result.error || '任务提交失败');
+                }
+
+                currentTaskId = result.unique_id;
+                
+                // 保存任务状态（用于历史记录切换）
+                savedTaskState = {
+                    taskId: currentTaskId,
+                    text: text,
+                    character: character,
+                    model: model,
+                    statusPollInterval: true,
+                    taskStartTime: null // 任务刚提交，还没有开始时间
+                };
+                
+                // 确保视图模式是任务模式
+                currentViewMode = 'task';
+                viewingHistoryId = null;
+                updateBackToTaskButton();
+
+                updateStatus(`📋 任务已提交 (ID: ${currentTaskId.substring(0, 8)}...)`);
+                showToast('任务已提交，正在后台生成中...', 'info');
+
+                // 开始轮询状态
+                startStatusPolling(currentTaskId);
+
+            } catch (error) {
+                console.error('生成失败:', error);
+                updateStatus('❌ 任务提交失败: ' + error.message);
+                showToast('任务提交失败: ' + error.message, 'error');
+                resetUI();
+            }
+        }
+
+        // 开始状态轮询
+        function startStatusPolling(taskId, taskStartTime = null) {
+            if (statusPollInterval) {
+                clearInterval(statusPollInterval);
+            }
+
+            let pollCount = 0;
+            let lastProgress = 0; // 记录上次的进度值，避免倒退
+            let consecutiveFailures = 0; // 连续失败次数
+
+            // 确定开始时间：如果提供了任务开始时间，使用它；否则使用当前时间
+            let startTime;
+            if (taskStartTime) {
+                try {
+                    startTime = new Date(taskStartTime).getTime();
+                } catch (e) {
+                    console.warn('无法解析任务开始时间，使用当前时间:', e);
+                    startTime = Date.now();
+                }
+            } else {
+                startTime = Date.now();
+            }
+
+            // 最大运行时间：30分钟（1800秒），超过这个时间应该停止轮询
+            const MAX_RUNTIME_SECONDS = 1800;
+
+            statusPollInterval = setInterval(async () => {
+                pollCount++;
+                const elapsedSeconds = (Date.now() - startTime) / 1000;
+
+                // 如果运行时间超过最大时间，停止轮询
+                if (elapsedSeconds > MAX_RUNTIME_SECONDS) {
+                    clearInterval(statusPollInterval);
+                    statusPollInterval = null;
+                    updateStatus('⏱️ 任务运行时间过长，已停止监控。请检查后端日志或手动刷新页面。');
+                    resetUI();
+                    showToast('任务运行时间过长，已停止监控', 'warning');
+                    return;
+                }
+
+                try {
+                    const response = await getVideoGenerationStatus(taskId);
+
+                    // 如果查询失败或任务不存在，增加失败计数
+                    if (!response.success) {
+                        consecutiveFailures++;
+                        console.warn(`任务状态查询失败 (${consecutiveFailures}/5):`, response.error || '未知错误');
+
+                        if (consecutiveFailures >= 5) {
+                            // 连续失败5次，停止轮询
+                            clearInterval(statusPollInterval);
+                            statusPollInterval = null;
+                            updateStatus('❌ 任务状态查询失败，已停止监控');
+                            resetUI();
+                            showToast('任务状态查询失败，请检查后端服务', 'error');
+                        }
+                        return;
+                    }
+
+                    // 如果任务数据不存在，也视为失败
+                    if (!response.data) {
+                        consecutiveFailures++;
+                        console.warn(`任务数据不存在 (${consecutiveFailures}/5)`);
+
+                        if (consecutiveFailures >= 5) {
+                            clearInterval(statusPollInterval);
+                            statusPollInterval = null;
+                            updateStatus('❌ 任务不存在，已停止监控。任务可能在后台运行，可在历史记录中查看。');
+                            // 不清除 savedTaskState，保留任务信息
+                            // 刷新历史记录，确保任务出现在历史记录中
+                            loadHistoryList();
+                            // 只在任务模式下显示错误提示
+                            if (currentViewMode === 'task') {
+                                showToast('任务不存在，已停止监控。任务可能在后台运行，可在历史记录中查看。', 'warning');
+                            }
+                        }
+                        return;
+                    }
+
+                    // 查询成功，重置失败计数
+                    consecutiveFailures = 0;
+
+                    const task = response.data;
+                    const status = task.status;
+
+                    // 更新进度
+                    if (status === 'pending') {
+                        updateProgress(10, '任务排队中...');
+                        lastProgress = 10;
+                    } else if (status === 'running') {
+                        // 根据已运行时间计算进度（最多到90%，留10%给完成）
+                        // 进度计算逻辑：
+                        // 0-30秒：30-40%
+                        // 30-90秒：40-50%
+                        // 90-150秒：50-60%
+                        // 150-210秒：60-70%
+                        // 210-270秒：70-80%
+                        // 270秒以上：80-90%
+                        let progress = 30;
+                        if (elapsedSeconds <= 30) {
+                            progress = 30 + Math.floor((elapsedSeconds / 30) * 10);
+                        } else if (elapsedSeconds <= 90) {
+                            progress = 40 + Math.floor(((elapsedSeconds - 30) / 60) * 10);
+                        } else if (elapsedSeconds <= 150) {
+                            progress = 50 + Math.floor(((elapsedSeconds - 90) / 60) * 10);
+                        } else if (elapsedSeconds <= 210) {
+                            progress = 60 + Math.floor(((elapsedSeconds - 150) / 60) * 10);
+                        } else if (elapsedSeconds <= 270) {
+                            progress = 70 + Math.floor(((elapsedSeconds - 210) / 60) * 10);
+                        } else {
+                            progress = Math.min(80 + Math.floor(((elapsedSeconds - 270) / 60) * 10), 90);
+                        }
+
+                        // 确保进度不会倒退（至少保持上次的进度）
+                        if (progress < lastProgress) {
+                            progress = lastProgress;
+                        }
+                        // 但允许小幅增长（即使计算值相同，也稍微增加一点，避免完全卡住）
+                        else if (progress === lastProgress && elapsedSeconds > 60) {
+                            progress = Math.min(lastProgress + 0.5, 90);
+                        }
+
+                        lastProgress = progress;
+
+                        const minutes = Math.floor(elapsedSeconds / 60);
+                        const seconds = Math.floor(elapsedSeconds % 60);
+                        const timeStr = minutes > 0 ? `${minutes}分${seconds}秒` : `${seconds}秒`;
+                        updateProgress(progress, `生成中... (已运行 ${timeStr})`);
+                    } else if (status === 'completed') {
+                        // 任务完成
+                        clearInterval(statusPollInterval);
+                        statusPollInterval = null;
+
+                        updateProgress(100, '生成完成！');
+                        updateStatus('✅ 视频生成成功！');
+
+                        // 显示视频
+                        const videoUrl = `${getApiBaseUrl()}/videos/${taskId}.mp4`;
+                        displayVideo(videoUrl, task);
+
+                        // 任务完成，清除保存的状态
+                        savedTaskState = null;
+                        updateBackToTaskButton();
+
+                        // 刷新历史记录列表（任务已完成，应该出现在历史记录中）
+                        loadHistoryList();
+
+                        // 只在任务模式下重置UI
+                        if (currentViewMode === 'task') {
+                        resetUI();
+                        }
+                        showToast('视频生成成功！', 'success');
+
+                    } else if (status === 'failed' || status === 'cancelled') {
+                        // 任务失败或已取消
+                        clearInterval(statusPollInterval);
+                        statusPollInterval = null;
+
+                        const error = task.error || (status === 'cancelled' ? '任务已取消' : '未知错误');
+                        updateStatus(`❌ ${status === 'cancelled' ? '任务已取消' : '生成失败'}: ${error}`);
+                        showToast(status === 'cancelled' ? '任务已取消' : ('生成失败: ' + error), 'error');
+                        
+                        // 任务失败，清除保存的状态
+                        savedTaskState = null;
+                        updateBackToTaskButton();
+                        
+                        // 刷新历史记录列表（任务已失败，应该出现在历史记录中）
+                        loadHistoryList();
+                        
+                        // 只在任务模式下重置UI
+                        if (currentViewMode === 'task') {
+                        resetUI();
+                        }
+                    } else {
+                        // 未知状态，记录日志但继续轮询
+                        console.warn('未知任务状态:', status);
+                    }
+                } catch (error) {
+                    console.error('状态查询异常:', error);
+                    consecutiveFailures++;
+
+                    if (consecutiveFailures >= 5) {
+                        // 如果连续失败多次，停止轮询
+                        clearInterval(statusPollInterval);
+                        statusPollInterval = null;
+                        updateStatus('❌ 状态查询失败，已停止监控。任务仍在后台运行，可在历史记录中查看。');
+                        // 不清除 savedTaskState，保留任务信息，用户可以通过历史记录查看
+                        // 刷新历史记录，确保任务出现在历史记录中
+                        loadHistoryList();
+                        // 只在任务模式下显示错误提示
+                        if (currentViewMode === 'task') {
+                            showToast('状态查询失败，请检查后端服务。任务仍在后台运行，可在历史记录中查看。', 'error');
+                        }
+                    }
+                }
+            }, 2000); // 每2秒轮询一次
+        }
+
+        // 显示视频
+        function displayVideo(videoUrl, task) {
+            const video = document.getElementById('videoOutput');
+            const videoContainer = document.getElementById('videoContainer');
+            const placeholder = document.getElementById('videoPlaceholder');
+
+            // 添加时间戳参数，避免缓存问题
+            const urlWithTimestamp = videoUrl + (videoUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+
+            // 设置视频源
+            video.src = urlWithTimestamp;
+            video.load();
+
+            // 显示视频容器，隐藏占位符
+            videoContainer.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+
+            // 处理视频加载错误
+            video.onerror = function (e) {
+                console.error('视频加载失败:', videoUrl, e);
+                showToast('视频加载失败，请检查视频文件是否存在', 'error');
+                videoContainer.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+                placeholder.textContent = '视频加载失败';
+            };
+
+            // 视频可以播放时显示控制按钮和信息
+            video.oncanplay = function () {
+                console.log('视频可以播放:', videoUrl);
+                document.getElementById('videoControls').style.display = 'flex';
+                document.getElementById('videoInfo').style.display = 'block';
+
+                if (task && task.generation_time) {
+                    document.getElementById('generationTime').textContent = `${task.generation_time.toFixed(2)} 秒`;
+                }
+                if (task && task.unique_id) {
+                    document.getElementById('taskId').textContent = task.unique_id.substring(0, 16) + '...';
+                }
+            };
+        }
+
+        // 终止任务
+        async function cancelGeneration() {
+            if (!currentTaskId) {
+                return;
+            }
+
+            if (!confirm('确定要终止当前任务吗？')) {
+                return;
+            }
+
+            try {
+                const apiUrl = getApiBaseUrl();
+                const response = await fetch(`${apiUrl}/generate_video/cancel/${currentTaskId}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('任务已终止', 'info');
+                    // 任务已终止，清除保存的状态
+                    savedTaskState = null;
+                    updateBackToTaskButton();
+                } else {
+                    showToast('终止任务失败: ' + (data.error || '未知错误'), 'error');
+                }
+            } catch (error) {
+                console.error('终止任务失败:', error);
+                showToast('终止任务失败: ' + error.message, 'error');
+            }
+
+            // 只在任务模式下重置UI
+            if (currentViewMode === 'task') {
+            resetUI();
+            }
+        }
+
+        // 下载视频
+        function downloadVideo() {
+            const video = document.getElementById('videoOutput');
+            if (!video.src) {
+                showToast('视频未加载', 'error');
+                return;
+            }
+            const a = document.createElement('a');
+            a.href = video.src;
+            a.download = `nerffacespeech_${Date.now()}.mp4`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showToast('视频下载已开始', 'success');
+        }
+
+        // 全屏播放
+        function fullscreenVideo() {
+            const video = document.getElementById('videoOutput');
+            if (video.requestFullscreen) {
+                video.requestFullscreen();
+            } else if (video.webkitRequestFullscreen) {
+                video.webkitRequestFullscreen();
+            } else if (video.mozRequestFullScreen) {
+                video.mozRequestFullScreen();
+            } else if (video.msRequestFullscreen) {
+                video.msRequestFullscreen();
+            }
+        }
+
+        // 更新状态
+        function updateStatus(message) {
+            document.getElementById('statusBox').textContent = message;
+        }
+
+        // 更新进度
+        function updateProgress(percent, text) {
+            document.getElementById('progressFill').style.width = percent + '%';
+            document.getElementById('progressText').textContent = text || '处理中...';
+            document.getElementById('progressPercent').textContent = Math.round(percent) + '%';
+        }
+
+        // 禁用/启用输入
+        function setInputsDisabled(disabled) {
+            document.getElementById('textInput').disabled = disabled;
+            document.getElementById('characterInput').disabled = disabled;
+            document.getElementById('modelSelect').disabled = disabled;
+            document.getElementById('refreshBtn').disabled = disabled;
+            const refreshCharacterBtn = document.getElementById('refreshCharacterBtn');
+            if (refreshCharacterBtn) refreshCharacterBtn.disabled = disabled;
+        }
+
+        // 重置UI（只在任务模式下）
+        function resetUI() {
+            // 如果当前在历史记录模式，不重置UI
+            if (currentViewMode === 'history') {
+                return;
+            }
+
+            if (statusPollInterval) {
+                clearInterval(statusPollInterval);
+                statusPollInterval = null;
+            }
+
+            currentTaskId = null;
+            savedTaskState = null;
+            setInputsDisabled(false);
+            document.getElementById('generateBtn').style.display = 'block';
+            document.getElementById('cancelBtn').style.display = 'none';
+            document.getElementById('progressContainer').style.display = 'none';
+            updateBackToTaskButton();
+        }
+
+        // 显示提示消息
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+
+            const colors = {
+                success: '#4ade80',
+                error: '#ef4444',
+                info: '#3b82f6'
+            };
+            toast.style.borderLeft = `4px solid ${colors[type] || colors.info}`;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+
+        // 页面卸载时清理
+        window.addEventListener('beforeunload', () => {
+            if (statusPollInterval) {
+                clearInterval(statusPollInterval);
+            }
+        });
+    </script>
+</body>
+
+</html>

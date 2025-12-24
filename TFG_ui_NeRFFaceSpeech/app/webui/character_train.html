@@ -1,0 +1,1105 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>角色训练 - NeRFFaceSpeech</title>
+    <style>
+        :root {
+        --primary: #1e40af;
+        --primary-2: #3b82f6;
+        --bg: #0b1020;
+        --card: rgba(255, 255, 255, 0.06);
+        --border: rgba(255, 255, 255, 0.14);
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+        --g1: rgba(59, 130, 246, 0.16);
+        --g2: rgba(14, 165, 233, 0.14);
+        --g3: rgba(56, 189, 248, 0.12);
+        --card-bg: rgb(24, 66, 134);
+        --base-font-size: 14px;
+        }
+
+        body.theme-tech {
+        --primary: #1e40af;
+        --primary-2: #3b82f6;
+        --bg: #0b1020;
+        --card: rgba(255, 255, 255, 0.06);
+        --border: rgba(255, 255, 255, 0.14);
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+        --g1: rgba(59, 130, 246, 0.16);
+        --g2: rgba(14, 165, 233, 0.14);
+        --g3: rgba(56, 189, 248, 0.12);
+        --card-bg: rgb(24, 66, 134);
+        }
+
+        body.theme-warm {
+            --primary: #f97316;
+            --primary-2: #ea580c;
+            --bg: #fff8f0;
+            --card: rgba(255, 255, 255, 0.9);
+            --border: rgba(249, 115, 22, 0.2);
+            --text: #1f2937;
+            --muted: #6b7280;
+            --g1: rgba(251, 191, 36, 0.15);
+            --g2: rgba(249, 115, 22, 0.12);
+            --g3: rgba(234, 88, 12, 0.1);
+            --card-bg: rgba(251, 191, 36, 0.15);
+        }
+
+        body.theme-minimal {
+            --primary: #6b7280;
+            --primary-2: #4b5563;
+            --bg: #f5f5f5;
+            --card: #ffffff;
+            --border: #e5e7eb;
+            --text: #111827;
+            --muted: #6b7280;
+            --g1: rgba(107, 114, 128, 0.08);
+            --g2: rgba(75, 85, 99, 0.07);
+            --g3: rgba(156, 163, 175, 0.06);
+            --card-bg: rgba(107, 114, 128, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        :root {
+            --base-font-size: 14px;
+        }
+
+        html {
+            font-size: var(--base-font-size);
+        }
+
+        body {
+            margin: 0;
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at 20% 20%, var(--g1), transparent 25%),
+                radial-gradient(circle at 80% 30%, var(--g2), transparent 25%),
+                radial-gradient(circle at 50% 80%, var(--g3), transparent 22%),
+                var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        .page {
+            max-width: 1400px;
+            width: 94vw;
+            margin: 0 auto;
+            padding: 20px 24px 40px;
+            min-height: 96vh;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 0.4px;
+        }
+
+        .back-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--text);
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background: var(--card-bg);
+            border-color: var(--primary);
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 520px 1fr;
+            gap: 18px;
+            align-items: start;
+        }
+
+        label {
+            font-weight: 700;
+            margin-bottom: 6px;
+            display: block;
+            color: var(--text);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text);
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--card-bg);
+            color: var(--text);
+            margin-bottom: 16px;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        button {
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, var(--primary), var(--primary-2));
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .btn-danger {
+            background: #ef4444;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #dc2626;
+        }
+
+        .status-box {
+            padding: 12px;
+            border-radius: 8px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: var(--text);
+            font-size: 14px;
+            margin-bottom: 16px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+        }
+
+        .status-box.error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .status-box.success {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        video {
+            width: 100%;
+            display: block;
+        }
+
+        .video-placeholder {
+            width: 100%;
+            aspect-ratio: 16/9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--muted);
+            font-size: 16px;
+            border-radius: 12px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .accordion {
+            margin-bottom: 16px;
+        }
+
+        .accordion-header {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .accordion-header:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .accordion-content {
+            padding: 12px;
+            display: none;
+        }
+
+        .accordion-content.show {
+            display: block;
+        }
+
+        .log-box {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            color: var(--text);
+            margin-bottom: 16px;
+        }
+
+        .log-line {
+            margin-bottom: 4px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .log-line.error {
+            color: #ef4444;
+        }
+
+        .log-line.warning {
+            color: #f59e0b;
+        }
+
+        .log-line.success {
+            color: #10b981;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--primary-2));
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        /* 设置按钮 */
+        .settings-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .settings-btn:hover {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        /* 侧边栏遮罩 */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 2000;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: var(--bg);
+            border-left: 1px solid var(--border);
+            z-index: 2001;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar.active {
+            right: 0;
+        }
+
+        .sidebar-content {
+            padding: 24px;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 20px;
+            color: var(--text);
+        }
+
+        .sidebar-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 0;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-close:hover {
+            background: var(--card-bg);
+            color: var(--text);
+        }
+
+        /* 分页标签 */
+        .sidebar-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--muted);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .sidebar-tab:hover {
+            color: var(--text);
+        }
+
+        /* 分页内容 */
+        .sidebar .tab-content {
+            display: none;
+        }
+
+        .sidebar .tab-content.active {
+            display: block;
+        }
+
+        /* 选项网格 */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .option-card {
+            padding: 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: var(--card-bg);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .option-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .option-card.selected {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .option-card.selected .option-name {
+            color: #fff;
+        }
+
+        .option-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .option-desc {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .option-card.selected .option-desc {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* 字号选择 */
+        .font-size-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .font-size-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: var(--card-bg);
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .font-size-btn:hover {
+            border-color: var(--primary);
+        }
+
+        .font-size-btn.selected {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .font-size-custom {
+            margin-top: 16px;
+        }
+
+        .font-size-custom input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--card-bg);
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                right: -100%;
+            }
+        }
+    </style>
+    <script src="settings.js"></script>
+    <script src="api.js"></script>
+</head>
+
+<body>
+    <button class="settings-btn" id="settingsBtn">⚙️ 设置</button>
+
+    <!-- 侧边栏遮罩 -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- 设置侧边栏 -->
+    <div class="sidebar" id="settingsSidebar">
+        <div class="sidebar-content">
+            <div class="sidebar-header">
+                <h2>设置</h2>
+                <button class="sidebar-close" id="sidebarClose">×</button>
+            </div>
+
+            <div class="sidebar-tabs">
+                <button class="sidebar-tab active" data-tab="theme">主题</button>
+                <button class="sidebar-tab" data-tab="font">字体</button>
+            </div>
+
+            <!-- 主题设置 -->
+            <div class="tab-content active" id="themeTab">
+                <div class="options-grid">
+                    <div class="option-card" data-theme="tech">
+                        <div class="option-name">科技风</div>
+                        <div class="option-desc">深蓝色科技感</div>
+                    </div>
+                    <div class="option-card" data-theme="warm">
+                        <div class="option-name">温馨风</div>
+                        <div class="option-desc">暖色调温馨</div>
+                    </div>
+                    <div class="option-card" data-theme="minimal">
+                        <div class="option-name">简约风</div>
+                        <div class="option-desc">灰色简约</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 字体设置 -->
+            <div class="tab-content" id="fontTab">
+                <div style="margin-bottom: 16px;">
+                    <label
+                        style="display: block; margin-bottom: 8px; color: var(--text); font-weight: 500;">字体样式</label>
+                    <div class="options-grid">
+                        <div class="option-card" data-font="SimSun">
+                            <div class="option-name">宋体</div>
+                            <div class="option-desc">SimSun</div>
+                        </div>
+                        <div class="option-card" data-font="SimHei">
+                            <div class="option-name">黑体</div>
+                            <div class="option-desc">SimHei</div>
+                        </div>
+                        <div class="option-card" data-font="Microsoft YaHei">
+                            <div class="option-name">微软雅黑</div>
+                            <div class="option-desc">Microsoft YaHei</div>
+                        </div>
+                        <div class="option-card" data-font="Arial">
+                            <div class="option-name">Arial</div>
+                            <div class="option-desc">Arial</div>
+                        </div>
+                        <div class="option-card" data-font="Times New Roman">
+                            <div class="option-name">Times New Roman</div>
+                            <div class="option-desc">Times New Roman</div>
+                        </div>
+                        <div class="option-card" data-font="Inter">
+                            <div class="option-name">Inter</div>
+                            <div class="option-desc">Inter（默认）</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label
+                        style="display: block; margin-bottom: 8px; color: var(--text); font-weight: 500;">字号大小</label>
+                    <div class="font-size-group">
+                        <button class="font-size-btn" data-size="small">小</button>
+                        <button class="font-size-btn" data-size="medium">中</button>
+                        <button class="font-size-btn" data-size="large">大</button>
+                        <button class="font-size-btn" data-size="custom">自定义</button>
+                    </div>
+                    <div class="font-size-custom" id="customSizeInput" style="display: none;">
+                        <input type="number" id="customSizeValue" placeholder="输入字号（px）" min="10" max="24" value="14">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="page">
+        <header>
+            <h1>🎭 角色训练</h1>
+            <a href="index.html" class="back-btn">← 返回首页</a>
+        </header>
+
+        <div class="grid">
+            <!-- 左侧：输入区域 -->
+            <div>
+                <div class="card">
+                    <h2 style="margin-top: 0; margin-bottom: 16px;">训练配置</h2>
+
+                    <label for="videoFile">上传视频文件</label>
+                    <input type="file" id="videoFile" accept="video/*" />
+
+                    <label for="characterName">角色名称</label>
+                    <input type="text" id="characterName" placeholder="例如: my_character" />
+
+                    <div class="accordion">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <span>高级参数</span>
+                            <span id="accordionIcon">▼</span>
+                        </div>
+                        <div class="accordion-content" id="advancedParams">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="ffhqAlignment" checked />
+                                <label for="ffhqAlignment">使用 FFHQ 对齐（推荐）</label>
+                            </div>
+
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="overwrite" />
+                                <label for="overwrite">覆盖已存在的数据</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; margin-top: 16px;">
+                        <button id="trainBtn" onclick="startTraining()">🚀 开始训练</button>
+                        <button class="btn-secondary" id="cancelBtn" onclick="cancelTraining()" style="display: none;">❌
+                            取消训练</button>
+                    </div>
+
+                    <div class="status-box" id="statusBox">等待开始训练...</div>
+
+                    <div class="progress-bar" id="progressBar" style="display: none;">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+
+                    <div class="log-box" id="logBox" style="display: none;">
+                        <div id="logContent"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：结果展示 -->
+            <div>
+                <div class="card">
+                    <h2 style="margin-top: 0; margin-bottom: 16px;">训练结果</h2>
+
+                    <div class="video-placeholder" id="videoPlaceholder">
+                        训练完成后，生成的视频将显示在这里
+                    </div>
+
+                    <div class="video-container hidden" id="videoContainer">
+                        <video id="resultVideo" controls></video>
+                    </div>
+
+                    <div id="resultInfo" style="display: none; margin-top: 16px;">
+                        <h3>训练信息</h3>
+                        <div id="resultDetails"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 使用 api.js 中的 getApiBaseUrl() 函数获取 API 地址
+
+        let currentTaskId = null;
+        let statusPollInterval = null;
+
+        // 应用设置
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 应用设置（从数据库读取）
+            try {
+                const settings = await fetchSettings();
+                await Promise.all([
+                    applySettingsOnly(settings),
+                    updateThemeSelection(settings),
+                    updateFontSelection(settings),
+                    updateFontSizeSelection(settings)
+                ]);
+            } catch (error) {
+                console.error('应用设置失败:', error);
+            }
+
+            // 设置侧边栏控制
+            const settingsBtn = document.getElementById('settingsBtn');
+            const settingsSidebar = document.getElementById('settingsSidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const sidebarClose = document.getElementById('sidebarClose');
+
+            if (settingsBtn && settingsSidebar) {
+                const openSidebar = () => {
+                    settingsSidebar.classList.add('active');
+                    sidebarOverlay.classList.add('active');
+                };
+
+                const closeSidebar = () => {
+                    settingsSidebar.classList.remove('active');
+                    sidebarOverlay.classList.remove('active');
+                };
+
+                settingsBtn.addEventListener('click', openSidebar);
+                if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
+                if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+
+                // 标签切换
+                document.querySelectorAll('.sidebar-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        const targetTab = tab.dataset.tab;
+                        document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+                        document.querySelectorAll('.sidebar .tab-content').forEach(c => c.classList.remove('active'));
+                        tab.classList.add('active');
+                        const targetContent = document.getElementById(targetTab + 'Tab');
+                        if (targetContent) targetContent.classList.add('active');
+                    });
+                });
+
+                // 主题选择
+                document.querySelectorAll('[data-theme]').forEach(card => {
+                    card.addEventListener('click', () => {
+                        applyTheme(card.dataset.theme);
+                    });
+                });
+
+                // 字体选择
+                document.querySelectorAll('[data-font]').forEach(card => {
+                    card.addEventListener('click', () => {
+                        applyFont(card.dataset.font);
+                    });
+                });
+
+                // 字号选择
+                document.querySelectorAll('[data-size]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        if (btn.dataset.size === 'custom') {
+                            const customInput = document.getElementById('customSizeInput');
+                            if (customInput) customInput.style.display = 'block';
+                        } else {
+                            const customInput = document.getElementById('customSizeInput');
+                            if (customInput) customInput.style.display = 'none';
+                            applyFontSize(btn.dataset.size);
+                        }
+                    });
+                });
+
+                // 自定义字号输入
+                const customSizeInput = document.getElementById('customSizeValue');
+                if (customSizeInput) {
+                    customSizeInput.addEventListener('change', () => {
+                        applyFontSize('custom');
+                    });
+                }
+            }
+
+            // 原有的初始化代码
+            try {
+                await applySettingsOnly();
+            } catch (error) {
+                console.error('应用设置失败:', error);
+            }
+
+            // 测试后端连接
+            try {
+                addLog('正在测试后端连接...', 'info');
+                const apiUrl = getApiBaseUrl();
+                console.log('[角色训练] API地址:', apiUrl);
+                const connected = await checkBackendConnection();
+                if (connected) {
+                    addLog('✅ 后端连接成功', 'success');
+                    setStatus('后端连接正常，可以开始训练', 'success');
+                } else {
+                    addLog('⚠️ 后端连接异常', 'warning');
+                    setStatus('⚠️ 后端连接异常，请检查后端服务', 'error');
+                }
+            } catch (error) {
+                addLog(`❌ 后端连接失败: ${error.message}`, 'error');
+                setStatus(`❌ 后端连接失败，请检查后端服务是否启动`, 'error');
+                console.error('后端连接测试失败:', error);
+            }
+        });
+
+        function toggleAccordion(header) {
+            const content = document.getElementById('advancedParams');
+            const icon = document.getElementById('accordionIcon');
+            content.classList.toggle('show');
+            icon.textContent = content.classList.contains('show') ? '▲' : '▼';
+        }
+
+        function setStatus(msg, type = 'info') {
+            const statusBox = document.getElementById('statusBox');
+            statusBox.textContent = msg;
+            statusBox.className = 'status-box';
+            if (type === 'error') statusBox.classList.add('error');
+            if (type === 'success') statusBox.classList.add('success');
+        }
+
+        function addLog(message, level = 'info') {
+            const logBox = document.getElementById('logBox');
+            const logContent = document.getElementById('logContent');
+            logBox.style.display = 'block';
+
+            const logLine = document.createElement('div');
+            logLine.className = `log-line ${level}`;
+            logLine.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContent.appendChild(logLine);
+
+            // 自动滚动到底部
+            logBox.scrollTop = logBox.scrollHeight;
+
+            // 限制日志行数（最多保留100行）
+            while (logContent.children.length > 100) {
+                logContent.removeChild(logContent.firstChild);
+            }
+        }
+
+        function updateProgress(percent) {
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+            progressBar.style.display = 'block';
+            progressFill.style.width = `${percent}%`;
+        }
+
+        async function startTraining() {
+            const videoFile = document.getElementById('videoFile').files[0];
+            const characterName = document.getElementById('characterName').value.trim();
+
+            if (!videoFile) {
+                setStatus('请选择视频文件', 'error');
+                return;
+            }
+
+            if (!characterName) {
+                setStatus('请输入角色名称', 'error');
+                return;
+            }
+
+            // 准备表单数据
+            // 使用默认值：face_ratio=0.6, output_size=1024x1024
+            const formData = new FormData();
+            formData.append('video', videoFile);
+            formData.append('character_name', characterName);
+            formData.append('face_ratio', '0.6');  // 默认值
+            formData.append('output_size_w', '1024');  // 默认值
+            formData.append('output_size_h', '1024');  // 默认值
+            formData.append('ffhq_alignment', document.getElementById('ffhqAlignment').checked ? 'true' : 'false');
+            formData.append('overwrite', document.getElementById('overwrite').checked ? 'true' : 'false');
+
+            // 禁用输入
+            document.getElementById('trainBtn').disabled = true;
+            document.getElementById('cancelBtn').style.display = 'inline-block';
+            document.getElementById('videoFile').disabled = true;
+            document.getElementById('characterName').disabled = true;
+
+            // 重置UI
+            document.getElementById('videoContainer').classList.add('hidden');
+            document.getElementById('videoPlaceholder').classList.remove('hidden');
+            document.getElementById('resultInfo').style.display = 'none';
+            document.getElementById('logContent').innerHTML = '';
+            updateProgress(0);
+
+            setStatus('正在提交训练任务...', 'info');
+            addLog('开始提交训练任务...', 'info');
+            const apiUrl = getApiBaseUrl();
+            addLog(`API地址: ${apiUrl}/character/train`, 'info');
+            addLog(`角色名称: ${characterName}`, 'info');
+            addLog(`视频文件: ${videoFile.name} (${(videoFile.size / 1024 / 1024).toFixed(2)} MB)`, 'info');
+
+            try {
+                // 使用 api.js 中的 trainCharacter 函数
+                const result = await trainCharacter(formData);
+
+                addLog(`响应数据: ${JSON.stringify(result)}`, 'info');
+
+                if (!result.success) {
+                    throw new Error(result.error || '训练任务提交失败');
+                }
+
+                currentTaskId = result.task_id;
+                setStatus(`训练任务已提交 (任务ID: ${currentTaskId})`, 'info');
+                addLog(`训练任务已提交，任务ID: ${currentTaskId}`, 'success');
+
+                // 开始轮询状态
+                startStatusPolling();
+
+            } catch (error) {
+                console.error('训练任务提交失败:', error);
+                const errorMsg = error.message || '未知错误';
+                setStatus(`提交失败: ${errorMsg}`, 'error');
+                addLog(`提交失败: ${errorMsg}`, 'error');
+                addLog(`错误详情: ${error.stack || error.toString()}`, 'error');
+                resetUI();
+            }
+        }
+
+        function startStatusPolling() {
+            if (statusPollInterval) {
+                clearInterval(statusPollInterval);
+            }
+
+            statusPollInterval = setInterval(async () => {
+                try {
+                    // 使用 api.js 中的 getCharacterTrainingStatus 函数
+                    const result = await getCharacterTrainingStatus(currentTaskId);
+
+                    if (!result.success) {
+                        throw new Error(result.error || '状态查询失败');
+                    }
+
+                    const status = result.status;
+                    const resultData = result.result;
+
+                    if (status === 'completed') {
+                        clearInterval(statusPollInterval);
+                        statusPollInterval = null;
+
+                        if (resultData && resultData.success) {
+                            setStatus('✅ 训练完成！', 'success');
+                            addLog('训练完成！', 'success');
+                            updateProgress(100);
+
+                            // 显示训练结果
+                            displayTrainingResult(resultData, result.character_name);
+
+                            resetUI();
+                        } else {
+                            const error = resultData?.error || '未知错误';
+                            setStatus(`训练失败: ${error}`, 'error');
+                            addLog(`训练失败: ${error}`, 'error');
+                            resetUI();
+                        }
+
+                    } else if (status === 'failed') {
+                        clearInterval(statusPollInterval);
+                        statusPollInterval = null;
+
+                        const error = result.error || '训练失败';
+                        setStatus(`训练失败: ${error}`, 'error');
+                        addLog(`训练失败: ${error}`, 'error');
+                        resetUI();
+
+                    } else if (status === 'processing' || status === 'pending') {
+                        // 更新进度（模拟，实际进度需要从日志中提取）
+                        const progress = status === 'processing' ? 50 : 10;
+                        updateProgress(progress);
+                        setStatus(`训练中... (${status})`, 'info');
+                    }
+
+                } catch (error) {
+                    addLog(`状态查询失败: ${error.message}`, 'error');
+                }
+            }, 2000); // 每2秒轮询一次
+        }
+
+        function displayTrainingResult(resultData, characterName) {
+            // 查找生成的视频文件
+            // 视频文件应该在 assets/charactor/{character_name}/output_NeRFFaceSpeech.mp4
+            const apiUrl = getApiBaseUrl();
+            const videoUrl = `${apiUrl}/character/${characterName}/video`;
+
+            // 尝试加载视频
+            const video = document.getElementById('resultVideo');
+            video.src = videoUrl;
+            video.load();
+
+            // 显示视频容器
+            document.getElementById('videoContainer').classList.remove('hidden');
+            document.getElementById('videoPlaceholder').classList.add('hidden');
+
+            // 显示训练信息
+            const resultInfo = document.getElementById('resultInfo');
+            const resultDetails = document.getElementById('resultDetails');
+
+            resultDetails.innerHTML = `
+        <p><strong>角色名称:</strong> ${characterName}</p>
+        <p><strong>提取帧数:</strong> ${resultData.num_frames || 0}</p>
+        <p><strong>模型文件:</strong> ${resultData.pti_models ? '已生成' : '未生成'}</p>
+        ${resultData.character_dir ? `<p><strong>输出目录:</strong> ${resultData.character_dir}</p>` : ''}
+      `;
+
+            resultInfo.style.display = 'block';
+        }
+
+        function cancelTraining() {
+            if (currentTaskId && confirm('确定要取消训练吗？')) {
+                if (statusPollInterval) {
+                    clearInterval(statusPollInterval);
+                    statusPollInterval = null;
+                }
+                setStatus('训练已取消', 'info');
+                addLog('用户取消了训练', 'warning');
+                resetUI();
+            }
+        }
+
+        function resetUI() {
+            document.getElementById('trainBtn').disabled = false;
+            document.getElementById('cancelBtn').style.display = 'none';
+            document.getElementById('videoFile').disabled = false;
+            document.getElementById('characterName').disabled = false;
+            currentTaskId = null;
+        }
+    </script>
+</body>
+
+</html>
