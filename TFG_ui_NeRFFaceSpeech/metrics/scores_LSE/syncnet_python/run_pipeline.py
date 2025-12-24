@@ -221,30 +221,74 @@ def inference_video(opt):
 
 def scene_detect(opt):
 
-  video_manager = VideoManager([os.path.join(opt.avi_dir,opt.reference,'video.avi')])
-  stats_manager = StatsManager()
-  scene_manager = SceneManager(stats_manager)
-  # Add ContentDetector algorithm (constructor takes detector options like threshold).
-  scene_manager.add_detector(ContentDetector())
-  base_timecode = video_manager.get_base_timecode()
+  video_path = os.path.join(opt.avi_dir,opt.reference,'video.avi')
+  
+  try:
+    video_manager = VideoManager([video_path])
+    stats_manager = StatsManager()
+    scene_manager = SceneManager(stats_manager)
+    # Add ContentDetector algorithm (constructor takes detector options like threshold).
+    scene_manager.add_detector(ContentDetector())
+    base_timecode = video_manager.get_base_timecode()
 
-  video_manager.set_downscale_factor()
+    video_manager.set_downscale_factor()
 
-  video_manager.start()
+    video_manager.start()
 
-  scene_manager.detect_scenes(frame_source=video_manager)
+    try:
+      scene_manager.detect_scenes(frame_source=video_manager)
+      scene_list = scene_manager.get_scene_list(base_timecode)
+    except (TypeError, AttributeError, Exception) as e:
+      # scenedetect 库兼容性问题（例如：'tuple' object does not support item assignment）
+      # 如果场景检测失败，将整个视频作为一个场景处理
+      print('WARNING: Scene detection failed (%s), treating entire video as one scene' % str(e))
+      scene_list = []
+      # 使用 cv2 直接读取帧数，确保帧号正确
+      cap = cv2.VideoCapture(video_path)
+      fps = cap.get(cv2.CAP_PROP_FPS)
+      frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+      cap.release()
+      
+      # 使用与 base_timecode 相同的 fps 创建时间码
+      base_fps = base_timecode.get_fps() if hasattr(base_timecode, 'get_fps') else fps
+      base_timecode = FrameTimecode(timecode=0, fps=base_fps)
+      end_timecode = FrameTimecode(timecode=frame_count, fps=base_fps)
+      scene_list = [(base_timecode, end_timecode)]
+    finally:
+      video_manager.release()
 
-  scene_list = scene_manager.get_scene_list(base_timecode)
+  except Exception as e:
+    # 如果 VideoManager 初始化失败，使用帧数估算
+    print('WARNING: VideoManager initialization failed (%s), using frame-based fallback' % str(e))
+    # 使用 cv2 读取帧数
+    cap = cv2.VideoCapture(video_path)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    cap.release()
+    
+    # 创建时间码
+    base_timecode = FrameTimecode(timecode=0, fps=fps)
+    end_timecode = FrameTimecode(timecode=frame_count, fps=fps)
+    scene_list = [(base_timecode, end_timecode)]
 
   savepath = os.path.join(opt.work_dir,opt.reference,'scene.pckl')
 
   if scene_list == []:
-    scene_list = [(video_manager.get_base_timecode(),video_manager.get_current_timecode())]
+    # 如果场景列表为空，将整个视频作为一个场景
+    # 使用帧数估算
+    cap = cv2.VideoCapture(video_path)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    cap.release()
+    
+    base_timecode = FrameTimecode(timecode=0, fps=fps)
+    end_timecode = FrameTimecode(timecode=frame_count, fps=fps)
+    scene_list = [(base_timecode, end_timecode)]
 
   with open(savepath, 'wb') as fil:
     pickle.dump(scene_list, fil)
 
-  print('%s - scenes detected %d'%(os.path.join(opt.avi_dir,opt.reference,'video.avi'),len(scene_list)))
+  print('%s - scenes detected %d'%(video_path, len(scene_list)))
 
   return scene_list
     

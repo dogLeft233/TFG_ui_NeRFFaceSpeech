@@ -40,6 +40,7 @@ services:
       # 如果需要在运行时修改代码或恢复模型软链接，需要使用 :rw
       - ../NeRFFaceSpeech_Code:/app/NeRFFaceSpeech_Code:rw
       - ../eval_pipline:/app/eval_pipline:rw
+      - ../metrics:/app/metrics:rw
       
       # 其他项目文件（只读）
       - ../download_models.py:/app/download_models.py:ro

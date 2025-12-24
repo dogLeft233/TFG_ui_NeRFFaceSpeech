@@ -23,8 +23,47 @@ def compute_all_metrics(
     lse_batch_size: int = 20,
     lse_vshift: int = 15,
     lse_tmp_dir: Optional[Union[str, Path]] = None,
-    lse_syncnet_dir: Optional[Union[str, Path]] = None
+    lse_syncnet_dir: Optional[Union[str, Path]] = None,
+    lse_use_preprocessing: bool = False,
+    lse_data_dir: Optional[Union[str, Path]] = None,
+    lse_reference: Optional[str] = None,
+    lse_return_all_tracks: bool = False,
+    lse_min_track: int = 100,
+    lse_facedet_scale: float = 0.25,
+    lse_crop_scale: float = 0.40,
+    lse_frame_rate: int = 25,
+    lse_num_failed_det: int = 25,
+    lse_min_face_size: int = 100,
 ) -> Dict[str, Union[float, List[float]]]:
+    """计算视频的所有指标。
+    
+    Args:
+        video1_path: 第一个视频文件路径（MP4）
+        video2_path: 第二个视频文件路径（MP4），如果提供则计算 PSNR、SSIM 和 FID
+        max_frames: 最大处理帧数，如果为 None 则处理所有帧（不适用于 LSE）
+        metrics: 要计算的指标列表，可选值：['niqe', 'psnr', 'ssim', 'fid', 'lse']
+                 如果为 None，则根据是否提供 video2_path 自动选择
+        device: 计算设备（'cuda' 或 'cpu'），用于 FID 计算
+        fid_batch_size: FID 计算的批处理大小
+        lse_model_path: LSE 计算的 SyncNet 模型路径
+        lse_batch_size: LSE 计算的批处理大小
+        lse_vshift: LSE 计算的视频偏移范围
+        lse_tmp_dir: LSE 计算的临时目录
+        lse_syncnet_dir: LSE 计算的 SyncNet 代码目录
+        lse_use_preprocessing: 是否使用完整预处理流程（人脸检测、跟踪、裁剪）
+        lse_data_dir: 预处理数据目录（仅在 lse_use_preprocessing=True 时使用）
+        lse_reference: 预处理参考名称（仅在 lse_use_preprocessing=True 时使用）
+        lse_return_all_tracks: 是否返回所有轨迹的 LSE（仅在 lse_use_preprocessing=True 时使用）
+        lse_min_track: 最小轨迹长度（帧数），默认 100
+        lse_facedet_scale: 人脸检测时的图像缩放比例，默认 0.25
+        lse_crop_scale: 裁剪边界框的扩展比例，默认 0.40
+        lse_frame_rate: 视频帧率，默认 25
+        lse_num_failed_det: 允许的最大连续检测失败帧数，默认 25
+        lse_min_face_size: 最小人脸尺寸（像素），默认 100
+    
+    Returns:
+        包含所有指标结果的字典
+    """
     """计算视频的所有指标。
     
     Args:
@@ -84,7 +123,17 @@ def compute_all_metrics(
                 batch_size=lse_batch_size,
                 vshift=lse_vshift,
                 tmp_dir=lse_tmp_dir,
-                syncnet_dir=lse_syncnet_dir
+                syncnet_dir=lse_syncnet_dir,
+                use_preprocessing=lse_use_preprocessing,
+                data_dir=lse_data_dir,
+                reference=lse_reference,
+                return_all_tracks=lse_return_all_tracks,
+                facedet_scale=lse_facedet_scale,
+                crop_scale=lse_crop_scale,
+                min_track=lse_min_track,
+                frame_rate=lse_frame_rate,
+                num_failed_det=lse_num_failed_det,
+                min_face_size=lse_min_face_size,
             )
             results['LSE_C'] = lse_c
             results['LSE_D'] = lse_d
@@ -97,7 +146,17 @@ def compute_all_metrics(
                     batch_size=lse_batch_size,
                     vshift=lse_vshift,
                     tmp_dir=lse_tmp_dir,
-                    syncnet_dir=lse_syncnet_dir
+                    syncnet_dir=lse_syncnet_dir,
+                    use_preprocessing=lse_use_preprocessing,
+                    data_dir=lse_data_dir,
+                    reference=lse_reference,
+                    return_all_tracks=lse_return_all_tracks,
+                    facedet_scale=lse_facedet_scale,
+                    crop_scale=lse_crop_scale,
+                    min_track=lse_min_track,
+                    frame_rate=lse_frame_rate,
+                    num_failed_det=lse_num_failed_det,
+                    min_face_size=lse_min_face_size,
                 )
                 results['LSE_C_video2'] = lse_c2
                 results['LSE_D_video2'] = lse_d2
@@ -225,7 +284,17 @@ def compute_lse_metric(
     batch_size: int = 20,
     vshift: int = 15,
     tmp_dir: Optional[Union[str, Path]] = None,
-    syncnet_dir: Optional[Union[str, Path]] = None
+    syncnet_dir: Optional[Union[str, Path]] = None,
+    use_preprocessing: bool = False,
+    data_dir: Optional[Union[str, Path]] = None,
+    reference: Optional[str] = None,
+    return_all_tracks: bool = False,
+    facedet_scale: float = 0.25,
+    crop_scale: float = 0.40,
+    min_track: int = 100,
+    frame_rate: int = 25,
+    num_failed_det: int = 25,
+    min_face_size: int = 100,
 ) -> Tuple[float, float]:
     """计算视频的 LSE 指标（便捷函数）。
     
@@ -236,13 +305,26 @@ def compute_lse_metric(
         vshift: 视频偏移范围
         tmp_dir: 临时目录
         syncnet_dir: SyncNet 代码目录
+        use_preprocessing: 是否使用完整预处理流程（人脸检测、跟踪、裁剪）
+        data_dir: 预处理数据目录（仅在 use_preprocessing=True 时使用）
+        reference: 预处理参考名称（仅在 use_preprocessing=True 时使用）
+        return_all_tracks: 是否返回所有轨迹的 LSE（仅在 use_preprocessing=True 时使用）
     
     Returns:
         (LSE-C, LSE-D) 元组
     """
-    return compute_lse_from_video(
-        video_path, model_path, batch_size, vshift, tmp_dir, syncnet_dir
+    result = compute_lse_from_video(
+        video_path, model_path, batch_size, vshift, tmp_dir, syncnet_dir,
+        use_preprocessing, data_dir, reference, return_all_tracks,
+        facedet_scale, crop_scale, min_track, frame_rate, num_failed_det, min_face_size
     )
+    # 如果返回所有轨迹，取平均值
+    if isinstance(result, list):
+        import numpy as np
+        avg_lse_c = np.mean([r[0] for r in result])
+        avg_lse_d = np.mean([r[1] for r in result])
+        return avg_lse_c, avg_lse_d
+    return result
 
 
 if __name__ == "__main__":

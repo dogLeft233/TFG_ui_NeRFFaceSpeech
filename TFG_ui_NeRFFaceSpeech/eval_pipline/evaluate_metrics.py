@@ -85,6 +85,59 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="最大处理帧数（如果为 None 则处理所有帧）",
     )
+    parser.add_argument(
+        "--lse-use-preprocessing",
+        action="store_true",
+        help="LSE 计算时使用完整预处理流程（人脸检测、跟踪、裁剪），与 run_pipeline.py 一致",
+    )
+    parser.add_argument(
+        "--lse-data-dir",
+        type=Path,
+        default=None,
+        help="LSE 预处理数据目录（仅在 --lse-use-preprocessing 时使用）",
+    )
+    parser.add_argument(
+        "--lse-reference",
+        type=str,
+        default=None,
+        help="LSE 预处理参考名称（仅在 --lse-use-preprocessing 时使用）",
+    )
+    parser.add_argument(
+        "--lse-min-track",
+        type=int,
+        default=100,
+        help="LSE 预处理最小轨迹长度（帧数），默认 100。如果视频较短或人脸较少，可以降低此值（例如 50）",
+    )
+    parser.add_argument(
+        "--lse-facedet-scale",
+        type=float,
+        default=0.25,
+        help="LSE 预处理人脸检测时的图像缩放比例，默认 0.25",
+    )
+    parser.add_argument(
+        "--lse-crop-scale",
+        type=float,
+        default=0.40,
+        help="LSE 预处理裁剪边界框的扩展比例，默认 0.40",
+    )
+    parser.add_argument(
+        "--lse-frame-rate",
+        type=int,
+        default=25,
+        help="LSE 预处理视频帧率，默认 25",
+    )
+    parser.add_argument(
+        "--lse-num-failed-det",
+        type=int,
+        default=25,
+        help="LSE 预处理允许的最大连续检测失败帧数，默认 25",
+    )
+    parser.add_argument(
+        "--lse-min-face-size",
+        type=int,
+        default=100,
+        help="LSE 预处理最小人脸尺寸（像素），默认 100",
+    )
     return parser.parse_args()
 
 
@@ -148,6 +201,15 @@ def evaluate_video_pair(
     max_frames: Optional[int],
     skip_lse: bool = False,
     metrics: Optional[List[str]] = None,
+    lse_use_preprocessing: bool = False,
+    lse_data_dir: Optional[Path] = None,
+    lse_reference: Optional[str] = None,
+    lse_min_track: int = 100,
+    lse_facedet_scale: float = 0.25,
+    lse_crop_scale: float = 0.40,
+    lse_frame_rate: int = 25,
+    lse_num_failed_det: int = 25,
+    lse_min_face_size: int = 100,
 ) -> Dict[str, float]:
     """计算一对视频的所有指标。
     
@@ -178,6 +240,15 @@ def evaluate_video_pair(
             metrics=metrics_to_compute,
             device=device,
             fid_batch_size=batch_size,
+            lse_use_preprocessing=lse_use_preprocessing,
+            lse_data_dir=lse_data_dir,
+            lse_reference=lse_reference,
+            lse_min_track=lse_min_track,
+            lse_facedet_scale=lse_facedet_scale,
+            lse_crop_scale=lse_crop_scale,
+            lse_frame_rate=lse_frame_rate,
+            lse_num_failed_det=lse_num_failed_det,
+            lse_min_face_size=lse_min_face_size,
         )
         
         # 调试：输出 metrics_results 中的键（仅当只计算 LSE 时）
@@ -247,7 +318,18 @@ def evaluate_video_pair(
                 # 如果没有，单独计算 pred_video 的 LSE
                 logger.info("compute_all_metrics 未返回 LSE 结果，单独计算生成视频的 LSE...")
                 try:
-                    lse_c, lse_d = compute_lse_metric(str(pred_video))
+                    lse_c, lse_d = compute_lse_metric(
+                        str(pred_video),
+                        use_preprocessing=lse_use_preprocessing,
+                        data_dir=lse_data_dir,
+                        reference=lse_reference,
+                        min_track=lse_min_track,
+                        facedet_scale=lse_facedet_scale,
+                        crop_scale=lse_crop_scale,
+                        frame_rate=lse_frame_rate,
+                        num_failed_det=lse_num_failed_det,
+                        min_face_size=lse_min_face_size,
+                    )
                     results['LSE_C'] = float(lse_c)
                     results['LSE_D'] = float(lse_d)
                     logger.info(f"单独计算 LSE 成功: LSE_C={lse_c:.4f}, LSE_D={lse_d:.4f}")
@@ -326,6 +408,15 @@ def main() -> int:
                 max_frames=args.max_frames,
                 skip_lse=args.skip_lse,
                 metrics=args.metrics,
+                lse_use_preprocessing=args.lse_use_preprocessing,
+                lse_data_dir=args.lse_data_dir,
+                lse_reference=args.lse_reference,
+                lse_min_track=args.lse_min_track,
+                lse_facedet_scale=args.lse_facedet_scale,
+                lse_crop_scale=args.lse_crop_scale,
+                lse_frame_rate=args.lse_frame_rate,
+                lse_num_failed_det=args.lse_num_failed_det,
+                lse_min_face_size=args.lse_min_face_size,
             )
             
             all_results[gt_video.stem] = results
