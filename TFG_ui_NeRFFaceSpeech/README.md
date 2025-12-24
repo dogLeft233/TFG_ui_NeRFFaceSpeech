@@ -25,14 +25,53 @@ NeRFFaceSpeech 是一个基于 NeRF/NeRF-like 技术与多模态生成模型的 
 #### assets 下载
 
 下载链接：`https://pan.quark.cn/s/ed10110e0807`  
-下载后需解压到项目根目录，形成assets文件夹
+下载后需解压到项目根目录，形成assets文件夹，不要套两层assets文件夹
 
-## 非 Docker 使用
+### Docker 使用
+
+#### 环境准备
+
+1. **安装 Docker 与 GPU 运行环境**
+   - 已安装 Docker（20+）和 Docker Compose（`docker compose` 子命令）
+   - cuda 12.1以上
+
+2. **准备数据与模型**
+   - 按前文“数据准备”下载并解压 `assets/` 到项目根目录
+   - 按需要准备评估数据集到 `data/` 目录
+   - 评估使用数据集：`https://drive.google.com/drive/folders/1FwQoBd1ZrBJMrJE3ZzlNhK8xAe1OYGjX`
+   - 评估脚本使用的数据路径为`data/geneface_datasets/data/raw/videos`
+
+#### 构建镜像并启动
+
+在项目根目录执行
+
+提前加载模型权重：
+```bash
+./docker/prepare_project_docker.sh
+```
+如果chatterbox-tts和whisper下载失败，不影响推理
+
+如需启动web_ui:
+
+```bash
+./docker/start_docker.sh
+```
+
+如需运行评测流程：
+```bash
+./docker/run_eval_pipeline_docker.sh
+```
+
+如需手动构建：
+```bash
+docker compose -f docker/docker-compose.yml build nerffacespeech
+```
+
+### 非 Docker 使用
 
 - **非 Docker 环境**（推荐在 `llm_talk` 环境下执行）：
 
   ```bash
-
 
   # 激活 llm_talk 环境
   source "$HOME/miniconda3/etc/profile.d/conda.sh"
@@ -41,28 +80,13 @@ NeRFFaceSpeech 是一个基于 NeRF/NeRF-like 技术与多模态生成模型的 
   # 恢复软链接并预下载模型
   bash prepare_project.sh
   ```
-
-- **Docker 环境**：
-
-  使用封装脚本，在 Docker 容器内自动执行相同流程（会自动构建镜像并挂载 `assets/` 等目录）：
-
-  ```bash
-
-  bash docker/prepare_project_docker.sh
-  ```
-
-  该脚本会：
-  - 使用 `docker/docker-compose.yml` 中的 `nerffacespeech` 服务构建/启动临时容器
-  - 在容器内激活 `/app/environment/llm_talk`
-  - 在 `/app` 下执行 `bash prepare_project.sh`，完成模型软链接恢复与模型预下载
-
 #### 评估数据
 
 下载链接`https://drive.google.com/drive/folders/1FwQoBd1ZrBJMrJE3ZzlNhK8xAe1OYGjX`
   
 评估流程将使用`data/geneface_datasets/data/raw/videos`作为输入路径
 
-### 环境安装（非 Docker）
+#### 环境安装（非 Docker）
 
 1. **准备基础环境**
    - 操作系统：Ubuntu 22.04（推荐，其他 Linux 请自行适配）
@@ -171,7 +195,7 @@ NeRFFaceSpeech 是一个基于 NeRF/NeRF-like 技术与多模态生成模型的 
    - 调用 `tools/manage_assets.py restore` 恢复各处模型权重（通过软链接指向 `assets/models`）
    - 调用 `tools/download_models.py` 预下载 Whisper base 与 HuggingFace 的 `ResembleAI/chatterbox` 模型
 
-### 启动 Web UI（非 Docker）
+#### 启动 Web UI（非 Docker）
 
 在完成上述环境安装与数据准备后，可直接在项目根目录启动 Web UI：
 
@@ -180,7 +204,7 @@ cd NeRFFaceSpeech_TALK
 ./start.sh
 ```
 
-### 评估流程（Eval Pipeline，非 Docker）
+#### 评估流程（Eval Pipeline，非 Docker）
 
 在完成环境安装、模型恢复与数据准备后，可直接使用评估脚本：
 
@@ -197,79 +221,3 @@ bash run_eval_pipeline.sh [你的参数...]
 更详细的评估配置（输入输出路径、批量评估示例等）请参见仓库中的 `EVAL_PIPELINE_USAGE.md`。
 
 ---
-
-## Docker 使用
-
-### 环境准备
-
-1. **安装 Docker 与 GPU 运行环境**
-   - 已安装 Docker（20+）和 Docker Compose（`docker compose` 子命令）
-   - 已正确安装 NVIDIA Container Toolkit，下面命令能正常显示显卡：
-
-   ```bash
-   docker run --gpus all nvidia/cuda:12.1.0-devel-ubuntu22.04 nvidia-smi
-   ```
-
-2. **准备数据与模型**
-   - 按前文“数据准备”下载并解压 `assets/` 到项目根目录
-   - 按需要准备评估数据集到 `data/` 目录
-
-### 构建镜像
-
-在项目根目录执行：
-
-```bash
-cd NeRFFaceSpeech_TALK
-docker compose -f docker/docker-compose.yml build nerffacespeech
-```
-
-### 使用容器执行项目准备脚本
-
-推荐使用封装脚本，在 Docker 容器内完成模型软链接恢复与模型预下载：
-
-```bash
-cd NeRFFaceSpeech_TALK
-bash docker/prepare_project_docker.sh
-```
-
-该脚本会基于 `docker/docker-compose.yml`：
-- 构建/启动一次性 `nerffacespeech` 容器
-- 在容器内激活 `/app/environment/llm_talk`
-- 在 `/app` 下执行 `bash prepare_project.sh`
-
-### 启动 Web UI（Docker）
-
-推荐使用封装脚本，它会自动复用 `docker-compose` 中的 GPU / 挂载配置，并映射前端/后端端口：
-
-```bash
-cd NeRFFaceSpeech_TALK
-bash docker/start_docker.sh
-```
-
-启动成功后：
-- 后端 API：`http://localhost:8000`
-- Web UI：`http://localhost:7860`
-
-如果希望手动控制容器生命周期，也可以：
-
-```bash
-# 仅启动容器（默认进入 /bin/bash）
-docker compose -f docker/docker-compose.yml up -d nerffacespeech
-
-# 进入容器后手动启动 Web UI
-docker exec -it nerffacespeech /bin/bash
-cd /app
-bash start.sh
-```
-
-### 评估流程（Eval Pipeline，Docker）
-
-推荐使用封装脚本，它会在 Docker 容器内调用同一个 `run_eval_pipeline.sh`，并自动挂载数据/输出目录：
-
-```bash
-cd NeRFFaceSpeech_TALK
-bash docker/run_eval_pipeline_docker.sh [你的参数...]
-```
-
-所有传给 `run_eval_pipeline.sh` 的参数，可以原样传给 `docker/run_eval_pipeline_docker.sh`。  
-更详细的评估配置（输入输出路径、批量评估示例等）同样请参见 `EVAL_PIPELINE_USAGE.md`。
