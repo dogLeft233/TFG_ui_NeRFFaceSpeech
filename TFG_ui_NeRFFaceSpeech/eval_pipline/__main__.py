@@ -181,6 +181,72 @@ FFHQFaceAlignment 使用说明（方案 A）：
         action="store_true",
         help="使用 FFHQFaceAlignment 进行对齐（从第一帧计算对齐参数，应用到所有帧）",
     )
+    def str_to_bool(v):
+        if isinstance(v, bool):
+            return v
+        if v.lower() in ('yes', 'true', 't', 'y', '1'):
+            return True
+        elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+            return False
+        else:
+            raise argparse.ArgumentTypeError('Boolean value expected.')
+    
+    parser.add_argument(
+        "--lse-use-preprocessing",
+        nargs='?',
+        const=True,
+        default=True,
+        type=str_to_bool,
+        help="LSE 计算时使用完整预处理流程（人脸检测、跟踪、裁剪），与 run_pipeline.py 一致（默认启用）。使用 --lse-use-preprocessing=False 禁用",
+    )
+    parser.add_argument(
+        "--lse-data-dir",
+        type=Path,
+        default=None,
+        help="LSE 预处理数据目录（仅在 --lse-use-preprocessing 时使用）",
+    )
+    parser.add_argument(
+        "--lse-reference",
+        type=str,
+        default=None,
+        help="LSE 预处理参考名称（仅在 --lse-use-preprocessing 时使用）",
+    )
+    parser.add_argument(
+        "--lse-min-track",
+        type=int,
+        default=100,
+        help="LSE 预处理最小轨迹长度（帧数），默认 100。如果视频较短或人脸较少，可以降低此值（例如 50）",
+    )
+    parser.add_argument(
+        "--lse-facedet-scale",
+        type=float,
+        default=0.25,
+        help="LSE 预处理人脸检测时的图像缩放比例，默认 0.25",
+    )
+    parser.add_argument(
+        "--lse-crop-scale",
+        type=float,
+        default=0.40,
+        help="LSE 预处理裁剪边界框的扩展比例，默认 0.40",
+    )
+    parser.add_argument(
+        "--lse-frame-rate",
+        type=int,
+        default=25,
+        help="LSE 预处理视频帧率，默认 25",
+    )
+    parser.add_argument(
+        "--lse-num-failed-det",
+        type=int,
+        default=25,
+        help="LSE 预处理允许的最大连续检测失败帧数，默认 25",
+    )
+    parser.add_argument(
+        "--lse-min-face-size",
+        type=int,
+        default=100,
+        help="LSE 预处理最小人脸尺寸（像素），默认 100",
+    )
     return parser.parse_args()
 
 
@@ -335,6 +401,18 @@ def main() -> int:
             eval_args.extend(["--max-frames", str(args.max_frames)])
         if args.skip_lse:
             eval_args.append("--skip-lse")
+        if args.lse_use_preprocessing:
+            eval_args.append("--lse-use-preprocessing")
+            if args.lse_data_dir is not None:
+                eval_args.extend(["--lse-data-dir", str(args.lse_data_dir)])
+            if args.lse_reference is not None:
+                eval_args.extend(["--lse-reference", args.lse_reference])
+            eval_args.extend(["--lse-min-track", str(args.lse_min_track)])
+            eval_args.extend(["--lse-facedet-scale", str(args.lse_facedet_scale)])
+            eval_args.extend(["--lse-crop-scale", str(args.lse_crop_scale)])
+            eval_args.extend(["--lse-frame-rate", str(args.lse_frame_rate)])
+            eval_args.extend(["--lse-num-failed-det", str(args.lse_num_failed_det)])
+            eval_args.extend(["--lse-min-face-size", str(args.lse_min_face_size)])
         
         success = run_step(
             "步骤4: 指标计算",

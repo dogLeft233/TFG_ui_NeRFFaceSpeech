@@ -85,10 +85,23 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="最大处理帧数（如果为 None 则处理所有帧）",
     )
+    def str_to_bool(v):
+        if isinstance(v, bool):
+            return v
+        if v.lower() in ('yes', 'true', 't', 'y', '1'):
+            return True
+        elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+            return False
+        else:
+            raise argparse.ArgumentTypeError('Boolean value expected.')
+    
     parser.add_argument(
         "--lse-use-preprocessing",
-        action="store_true",
-        help="LSE 计算时使用完整预处理流程（人脸检测、跟踪、裁剪），与 run_pipeline.py 一致",
+        nargs='?',
+        const=True,
+        default=True,
+        type=str_to_bool,
+        help="LSE 计算时使用完整预处理流程（人脸检测、跟踪、裁剪），与 run_pipeline.py 一致（默认启用）。使用 --lse-use-preprocessing=False 禁用",
     )
     parser.add_argument(
         "--lse-data-dir",
@@ -201,7 +214,7 @@ def evaluate_video_pair(
     max_frames: Optional[int],
     skip_lse: bool = False,
     metrics: Optional[List[str]] = None,
-    lse_use_preprocessing: bool = False,
+    lse_use_preprocessing: bool = True,
     lse_data_dir: Optional[Path] = None,
     lse_reference: Optional[str] = None,
     lse_min_track: int = 100,
